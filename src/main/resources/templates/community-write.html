@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FUTSAL MATCH - 게시글 작성</title>
+
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        .community-main {
+            padding: 100px 40px 40px 40px;
+            background-color: #f7f7f7;
+            min-height: 100vh;
+        }
+        .board-container {
+            max-width: 900px; /* 글쓰기 페이지는 조금 좁게 */
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .write-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #6c5ce7;
+            padding-bottom: 10px;
+        }
+        .write-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        .write-controls button {
+            padding: 8px 15px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn-save {
+            background-color: #6c5ce7;
+            color: white;
+            border: none;
+        }
+        .btn-cancel {
+            background-color: #f0f0f0;
+            color: #555;
+            border: 1px solid #ddd;
+            margin-right: 10px;
+        }
+
+        .write-form input[type="text"],
+        .write-form select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            background: #f7f7f7;
+            font-family: inherit;
+        }
+        .write-form textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+            font-size: 16px;
+            background: #f7f7f7;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+
+<header class="quick-menu">
+    <div class="logo"><a href="/">FUTSAL MATCH</a></div>
+    <div class="header-icons">
+        <button id="profile-menu-toggle" class="profile-icon" style="position: relative; display: none;"> <i class="fas fa-user-circle"></i>
+            <span id="notification-badge" class="notification-badge"></span>
+        </button>
+        <div id="profile-menu" class="user-menu">
+            <div class="user-info">
+                <strong><span id="user-menu-username">사용자</span>님</strong>
+                <p>환영합니다!</p>
+            </div>
+            <ul>
+                <li><a href="/notifications" id="nav-notifications-link"><i class="fas fa-bell"></i> 알림 목록</a></li>
+                <li><a href="/mypage"><i class="fas fa-user"></i> 마이페이지</a></li>
+                <li><a href="/profile/edit"><i class="fas fa-user-edit"></i> 프로필 수정</a></li>
+                <li><a href="#" id="logout-button"><i class="fas fa-sign-out-alt"></i> 로그아웃</a></li>
+            </ul>
+        </div>
+        <button id="menu-toggle" class="menu-toggle-btn"><i class="fas fa-bars"></i></button>
+    </div>
+    <nav id="main-menu" class="main-nav">
+        <ul>
+            <li><a href="/"><i class="fas fa-home"></i> 메인 (Home)</a></li>
+            <li><a href="/fields"><i class="fas fa-search"></i> 구장검색</a></li>
+            <li><a href="/community" class="nav-link"><i class="fas fa-users"></i> 커뮤니티</a></li>
+            <li><a href="/chat"><i class="fas fa-comments"></i> 실시간채팅</a></li>
+            <li><a href="/schedule"><i class="fas fa-calendar-alt"></i> 일정</a></li>
+            <li><a href="/login" id="nav-login-link"><i class="fas fa-sign-in-alt"></i> 로그인</a></li>
+            <li style="display:none;"><a href="#" id="nav-logout-link"><i class="fas fa-sign-out-alt"></i> 로그아웃</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main class="community-main">
+    <div class="board-container">
+        <p id="post-success-message" class="info-message" style="display:none;"></p>
+        <p id="post-error-message" class="error-message" style="display:none;"></p>
+
+        <form id="write-form">
+            <div class="write-header">
+                <h1>게시글 작성</h1>
+                <div class="write-controls">
+                    <button type="button" class="btn-cancel" onclick="history.back()">취소</button>
+                    <button type="submit" class="btn-save">저장</button>
+                </div>
+            </div>
+
+            <div class="write-form">
+                <select id="category" name="category" required>
+                    <option value="" disabled selected>카테고리 선택</option>
+                    <option value="notice">공지</option>
+                    <option value="free">자유</option>
+                    <option value="team">팀원 모집</option>
+                    <option value="review">경기 리뷰</option>
+                </select>
+                <input type="text" id="title" name="title" placeholder="제목을 입력하세요" required>
+                <textarea id="content" name="content" placeholder="내용을 입력하세요." required></textarea>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script>
+    // --- (★공통★) 메뉴 토글 및 인증 로직 ---
+    const menuToggle = document.getElementById('menu-toggle');
+    const mainMenu = document.getElementById('main-menu');
+    const profileMenuToggle = document.getElementById('profile-menu-toggle');
+    const profileMenu = document.getElementById('profile-menu');
+    const logoutButton = document.getElementById('logout-button');
+    const navNotificationsLink = document.getElementById('nav-notifications-link');
+    const navLoginLink = document.getElementById('nav-login-link');
+    const navLogoutLink = document.querySelector('#main-menu ul li:last-child');
+
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            mainMenu.classList.toggle('show');
+            if (profileMenu) profileMenu.classList.remove('show');
+        });
+    }
+
+    if (profileMenuToggle) {
+        profileMenuToggle.addEventListener('click', () => {
+            profileMenu.classList.toggle('show');
+            if (mainMenu) mainMenu.classList.remove('show');
+        });
+    }
+
+    document.addEventListener('click', (event) => {
+        const isClickInsideHeader = document.querySelector('header').contains(event.target);
+        if (!isClickInsideHeader) {
+            mainMenu.classList.remove('show');
+            if (profileMenu) profileMenu.classList.remove('show');
+        }
+    });
+
+    if (logoutButton) {
+        logoutButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('hasReadReviews');
+            localStorage.removeItem('hasReadSchedules');
+            window.location.href = '/login';
+        });
+    }
+
+    if (navLogoutLink) {
+        navLogoutLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('hasReadReviews');
+            localStorage.removeItem('hasReadSchedules');
+            window.location.href = '/login';
+        });
+    }
+
+    if (navNotificationsLink) {
+        navNotificationsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.setItem('hasReadReviews', 'true');
+            localStorage.setItem('hasReadSchedules', 'true');
+            window.location.href = '/notifications';
+        });
+    }
+
+    // --- (★공통★) URL 기반 메뉴 활성화 함수 (강화된 로직) ---
+    function setActiveMenuItem() {
+        const path = window.location.pathname;
+        const navLinks = document.querySelectorAll('#main-menu a');
+
+        // 1. 모든 active 클래스 제거 (초기화)
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+        });
+
+        // 2. 현재 URL 경로와 일치하는 메뉴에 active 클래스 추가
+        navLinks.forEach(link => {
+            const href = link.getAttribute('href');
+
+            // Home 페이지 처리: 정확히 '/' 일 때만 활성화 (다른 페이지에 영향 주지 않도록)
+            if (path === '/' && href === '/') {
+                link.classList.add('active');
+            }
+            // 현재 페이지가 '/community/write' 이므로, '/community' 링크만 활성화
+            else if (path.startsWith('/community') && href === '/community') {
+                link.classList.add('active');
+            }
+            // 그 외 다른 경로 처리 (예: '/fields', '/chat', '/schedule')
+            else if (href !== '/' && path.startsWith(href)) {
+                link.classList.add('active');
+            }
+        });
+    }
+
+    // --- (★공통★) 알림 배지 및 인증 상태 로직 ---
+    const badge = document.getElementById('notification-badge');
+
+    function updateGlobalBadge() {
+        const hasReviewNotif = localStorage.getItem('hasReadReviews') !== 'true';
+        const hasScheduleNotif = false; // 더미
+
+        if (hasReviewNotif || hasScheduleNotif) {
+            if (badge) badge.style.display = 'block';
+        } else {
+            if (badge) badge.style.display = 'none';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const accessToken = localStorage.getItem('accessToken');
+
+        if (accessToken) {
+            // [회원일 때]
+            if (profileMenuToggle) profileMenuToggle.style.display = 'block';
+            if (navLoginLink) navLoginLink.parentElement.style.display = 'none';
+            if (navLogoutLink) navLogoutLink.style.display = 'list-item';
+            document.getElementById('user-menu-username').textContent = 'MyUser'; // 임시 사용자 이름
+
+            updateGlobalBadge();
+
+        } else {
+            // [비회원일 때]
+            if (profileMenuToggle) profileMenuToggle.style.display = 'none';
+            if (navLoginLink) navLoginLink.parentElement.style.display = 'list-item';
+            if (navLogoutLink) navLogoutLink.style.display = 'none';
+        }
+
+        // 메뉴 활성화 함수 실행
+        setActiveMenuItem();
+    });
+
+    // --- (★페이지별★) 게시글 작성 로직 (저장 후 이동) ---
+    const writeForm = document.getElementById('write-form');
+    const successMsg = document.getElementById('post-success-message');
+    const errorMsg = document.getElementById('post-error-message');
+
+    writeForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        successMsg.style.display = 'none';
+        errorMsg.style.display = 'none';
+
+        const category = document.getElementById('category').value;
+        const title = document.getElementById('title').value.trim();
+        const content = document.getElementById('content').value.trim();
+
+        // ★ 유효성 검사
+        if (!category || title === '' || content === '') {
+            errorMsg.textContent = '❌ 모든 필드를 채워주세요.';
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        try {
+            // 서버 통신 시뮬레이션
+            await new Promise(r => setTimeout(r, 800));
+
+            // 성공 시 메시지 표시
+            successMsg.textContent = '✅ 게시글이 성공적으로 등록되었습니다. 커뮤니티로 이동합니다.';
+            successMsg.style.display = 'block';
+
+            // ★ 2초 후 커뮤니티 페이지 ('/community')로 이동
+            setTimeout(() => {
+                window.location.href = '/community';
+            }, 2000);
+
+        } catch (error) {
+            errorMsg.textContent = '❌ 게시글 등록 중 오류가 발생했습니다.';
+            errorMsg.style.display = 'block';
+        }
+    });
+</script>
+</body>
+</html>
