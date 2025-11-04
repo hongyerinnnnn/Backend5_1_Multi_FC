@@ -403,7 +403,7 @@
             if (chatLinkAnchor && !accessToken) {
                 chatLinkAnchor.addEventListener('click', function(e) {
                     e.preventDefault();
-                    alert("❌ 실시간 채팅은 회원만 이용할 수 있습니다.");
+                    alert("❌ 실시간 채팅은 회원만 이용할 수 없습니다.");
                     window.location.href = '/login';
                 });
             }
