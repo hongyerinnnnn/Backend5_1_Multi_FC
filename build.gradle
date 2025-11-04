@@ -4,8 +4,9 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.4'
 }
 
-group = 'com.futsal.matcher'
+group = 'com.multi'
 version = '0.0.1-SNAPSHOT'
+description = 'Backend5_1_Multi_FC'
 
 java {
     sourceCompatibility = '17'

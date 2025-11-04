@@ -1,4 +1,4 @@
-package com.futsal.matcher.controller;
+package com.multi.backend5_1_multi_fc.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
