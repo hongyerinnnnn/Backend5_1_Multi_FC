@@ -1,1 +1,4 @@
 rootProject.name = 'Backend5_1_Multi_FC'
+ext{
+    dbPassword='*p9WBH>u,p,pR'
+}
