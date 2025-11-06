@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'구장 상세 (' + ${stadiumId} + ') - FUTSAL MATCH'">FUTSAL MATCH - 구장 상세</title>
+
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        .stadium-main {
+            padding: 100px 40px 40px 40px;
+            background-color: #f7f7f7;
+            min-height: 100vh;
+        }
+        .stadium-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .stadium-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: #2ecc71; /* 구장/경기장 강조색 */
+            margin-bottom: 25px;
+            border-bottom: 3px solid #6c5ce7;
+            padding-bottom: 10px;
+        }
+
+        .map-area {
+            width: 100%;
+            height: 350px;
+            background-color: #eee;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #888;
+        }
+        .info-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .info-item i {
+            width: 25px;
+            color: #6c5ce7;
+            margin-right: 10px;
+        }
+        .amenities-list {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 14px;
+        }
+        .amenity-tag {
+            display: inline-block;
+            background: #e6e6ff;
+            color: #6c5ce7;
+            padding: 5px 10px;
+            border-radius: 20px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .action-button-group {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .action-button-group a {
+            display: inline-block;
+            padding: 12px 25px;
+            font-weight: 700;
+            border-radius: 30px;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .btn-schedule {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .btn-review {
+            background-color: #f39c12;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<header class="quick-menu">
+    <div class="logo"><a href="/">FUTSAL MATCH</a></div>
+    <div class="header-icons">
+        <button id="profile-menu-toggle" class="profile-icon" style="position: relative; display: block;">
+            <i class="fas fa-user-circle"></i>
+        </button>
+        <div id="profile-menu" class="user-menu">
+            <div class="user-info">
+                <strong><span id="user-menu-username">사용자</span>님</strong>
+                <p>환영합니다!</p>
+            </div>
+            <ul>
+                <li><a href="/notifications" id="nav-notifications-link"><i class="fas fa-bell"></i> 알림 목록</a></li>
+                <li><a href="/mypage"><i class="fas fa-user"></i> 마이페이지</a></li>
+                <li><a href="/profile/edit"><i class="fas fa-user-edit"></i> 프로필 수정</a></li>
+                <li><a href="#" id="logout-button"><i class="fas fa-sign-out-alt"></i> 로그아웃</a></li>
+            </ul>
+        </div>
+        <button id="menu-toggle" class="menu-toggle-btn"><i class="fas fa-bars"></i></button>
+    </div>
+    <nav id="main-menu" class="main-nav">
+        <ul>
+            <li><a href="/"><i class="fas fa-home"></i> 메인 (Home)</a></li>
+            <li><a href="/fields" class="active"><i class="fas fa-search"></i> 구장검색</a></li> <li><a href="/community"><i class="fas fa-users"></i> 커뮤니티</a></li>
+            <li><a href="/chat"><i class="fas fa-comments"></i> 실시간채팅</a></li>
+            <li><a href="/schedule"><i class="fas fa-calendar-alt"></i> 일정</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main class="stadium-main">
+    <div class="stadium-container">
+
+        <h1 class="stadium-title" id="stadium-name">구장 이름 (ID: <span th:text="${stadiumId}">1</span>)</h1>
+
+        <div class="map-area" id="map">
+            (KakaoMap API가 표시될 구장 위치)
+        </div>
+
+        <div class="info-card">
+            <h2>구장 기본 정보</h2>
+
+            <div class="info-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span id="stadium-address">주소</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-phone"></i>
+                <span id="stadium-contact">연락처</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-won-sign"></i>
+                <span id="stadium-fee">시간당 비용</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-users"></i>
+                <span id="stadium-size">추천 매칭 사이즈</span>
+            </div>
+
+            <div class="amenities-list">
+                <strong>편의 시설 (ERD: etc_info)</strong>
+                <div id="stadium-amenities">
+                    <!-- JS로 태그 삽입 -->
+                </div>
+            </div>
+        </div>
+
+        <div class="action-button-group">
+            <a href="/schedule?stadiumId=1" class="btn-schedule" id="btn-schedule">
+                <i class="fas fa-calendar-alt"></i> 매치/일정 확인
+            </a>
+            <a href="/community?category=review&stadiumId=1" class="btn-review" id="btn-review">
+                <i class="fas fa-star"></i> 구장 리뷰 보기
+            </a>
+        </div>
+    </div>
+</main>
+
+<script>
+    // --- (★공통★) 메뉴 토글 및 인증 로직 (필요한 경우 여기에 삽입) ---
+    const menuToggle = document.getElementById('menu-toggle');
+    const mainMenu = document.getElementById('main-menu');
+    const profileMenuToggle = document.getElementById('profile-menu-toggle');
+    const profileMenu = document.getElementById('profile-menu');
+    const logoutButton = document.getElementById('logout-button');
+
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            mainMenu.classList.toggle('show');
+            profileMenu.classList.remove('show');
+        });
+    }
+    if (profileMenuToggle) {
+        profileMenuToggle.addEventListener('click', () => {
+            profileMenu.classList.toggle('show');
+            mainMenu.classList.remove('show');
+        });
+    }
+    if (logoutButton) {
+        logoutButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            window.location.href = '/login';
+        });
+    }
+
+    // --- (★페이지별★) 로직 실행 ---
+    document.addEventListener('DOMContentLoaded', async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const stadiumId = urlParams.get('id');
+
+        if (!stadiumId) {
+            document.getElementById('stadium-name').textContent = "오류: 구장 ID가 필요합니다.";
+            return;
+        }
+
+        // ⭐ 인증 확인 (비회원 차단)
+        const accessToken = localStorage.getItem('accessToken');
+        if (!accessToken) {
+            // 이 페이지는 비회원도 볼 수 있게 하거나, 로그인 페이지로 리다이렉트 처리 필요
+            console.warn("비회원 접근: 상세 정보를 제한적으로 표시합니다.");
+        } else {
+            document.getElementById('profile-menu-toggle').style.display = 'block';
+        }
+
+
+        // ⭐ 더미 데이터 로드 (실제로는 백엔드 API 호출)
+        const MOCK_DATA = {
+            '1': {
+                name: "강남 풋살 아레나",
+                address: "서울 강남구 테헤란로 123",
+                contact: "02-1234-5678",
+                fee: "50,000원/시간",
+                size: "6 vs 6",
+                etcInfo: ["샤워실 완비", "넉넉한 주차장", "대기실 제공", "음료 자판기"]
+            },
+            '2': {
+                name: "수원 월드컵 구장",
+                address: "경기 수원시 팔달구 100",
+                contact: "031-9876-5432",
+                fee: "45,000원/시간",
+                size: "5 vs 5",
+                etcInfo: ["샤워실", "대기실"]
+            },
+            '3': {
+                name: "인천 문학 미니구장",
+                address: "인천 연수구 동춘동 50",
+                contact: "032-1111-2222",
+                fee: "40,000원/시간",
+                size: "5 vs 5",
+                etcInfo: ["주차장"]
+            }
+        };
+
+        const data = MOCK_DATA[stadiumId] || MOCK_DATA['1'];
+
+        // DOM 업데이트
+        document.getElementById('stadium-name').textContent = data.name;
+        document.getElementById('stadium-address').textContent = data.address;
+        document.getElementById('stadium-contact').textContent = data.contact;
+        document.getElementById('stadium-fee').textContent = data.fee;
+        document.getElementById('stadium-size').textContent = data.size;
+
+        // 편의 시설 렌더링 (ERD: etc_info 반영)
+        const amenitiesContainer = document.getElementById('stadium-amenities');
+        amenitiesContainer.innerHTML = data.etcInfo.map(item =>
+            `<span class="amenity-tag">${item}</span>`
+        ).join('');
+
+        // 액션 버튼 링크 ID 업데이트
+        document.getElementById('btn-schedule').href = `/schedule?stadiumId=${stadiumId}`;
+        document.getElementById('btn-review').href = `/community?category=review&stadiumId=${stadiumId}`;
+    });
+</script>
