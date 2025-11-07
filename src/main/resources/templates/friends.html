@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FUTSAL MATCH - 친구/팀원 관리</title>
+
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        .friends-main {
+            padding: 100px 40px 40px 40px;
+            background-color: #f7f7f7;
+            min-height: 100vh;
+        }
+        .friends-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .friends-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #6c5ce7; /* 메인 컬러 강조 */
+            margin-bottom: 25px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        /* 탭 스타일 */
+        .friends-tabs {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 20px;
+        }
+        .friends-tabs button {
+            flex-grow: 1;
+            padding: 12px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #999;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .friends-tabs button.active {
+            color: #2c3e50;
+            border-bottom-color: #6c5ce7;
+        }
+
+        /* 친구 목록 및 요청 항목 스타일 */
+        .friend-list-item, .request-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 10px;
+            border-bottom: 1px solid #f7f7f7;
+            transition: background-color 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+        .friend-list-item:hover, .request-list-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* ⭐⭐ 항목 클릭 시 활성화 스타일 ⭐⭐ */
+        .friend-list-item.active, .request-list-item.active {
+            background-color: #e6e6ff;
+            border-left: 3px solid #6c5ce7;
+            padding-left: 7px;
+        }
+
+        .friend-info {
+            display: flex;
+            align-items: center;
+            width: 100%; /* ⭐ 수정: 공간 확보 ⭐ */
+            padding-right: 180px; /* ⭐ 수정: 액션 버튼 공간 확보 ⭐ */
+        }
+        .friend-name {
+            font-size: 17px;
+            font-weight: 600;
+            color: #333;
+            margin-right: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .friend-status {
+            font-size: 13px;
+            color: #28a745; /* 온라인 */
+            flex-shrink: 0;
+        }
+        .friend-status.offline {
+            color: #e74c3c; /* 오프라인 */
+        }
+
+        /* ⭐⭐ 수정: 액션 버튼 그룹 초기 숨김 및 위치 조정 ⭐⭐ */
+        .friend-actions, .request-actions {
+            display: none; /* ⭐ 기본 숨김 ⭐ */
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            gap: 10px;
+            background: inherit; /* 배경색 상속 */
+            padding-left: 10px;
+        }
+        /* ⭐⭐ 클릭 시 노출 ⭐⭐ */
+        .friend-list-item.active .friend-actions,
+        .request-list-item.active .request-actions {
+            display: flex;
+            z-index: 10;
+        }
+
+        .friend-actions button, .request-actions button {
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-chat {
+            background-color: #6c5ce7;
+            color: white;
+            border-color: #6c5ce7;
+        }
+        .btn-remove {
+            background-color: #f0f0f0;
+            color: #e74c3c;
+        }
+
+        /* 요청 목록 스타일 */
+        .request-type {
+            font-size: 15px;
+            color: #777;
+            margin-right: 10px;
+        }
+
+        /* 팀 목록 스타일 */
+        .team-card {
+            background: #fdfdfd;
+            border: 1px solid #ddd;
+            border-left: 5px solid #2ecc71;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .team-card h4 {
+            font-size: 20px;
+            color: #2ecc71;
+            margin-bottom: 10px;
+        }
+        .team-meta {
+            font-size: 14px;
+            color: #777;
+            margin-bottom: 10px;
+        }
+        .team-members-list {
+            list-style: none;
+            padding-left: 0;
+            font-size: 14px;
+        }
+        .team-members-list li {
+            margin-bottom: 3px;
+        }
+        .btn-manage-team {
+            background-color: #6c5ce7;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            float: right;
+            margin-top: -30px;
+        }
+        .no-team-message {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+
+<header class="quick-menu">
+    <div class="logo"><a href="/">FUTSAL MATCH</a></div>
+    <div class="header-icons">
+        <button id="profile-menu-toggle" class="profile-icon" style="position: relative;"> <i class="fas fa-user-circle"></i>
+            <span id="notification-badge" class="notification-badge"></span>
+        </button>
+        <div id="profile-menu" class="user-menu">
+            <div class="user-info">
+                <strong><span id="user-menu-username">사용자</span>님</strong>
+                <p>환영합니다!</p>
+            </div>
+            <ul>
+                <li><a href="/notifications" id="nav-notifications-link"><i class="fas fa-bell"></i> 알림 목록</a></li>
+                <li><a href="/mypage"><i class="fas fa-user"></i> 마이페이지</a></li>
+                <li><a href="/friends" class="active"><i class="fas fa-users-cog"></i> 친구/팀원 관리</a></li>
+                <li><a href="/profile/edit"><i class="fas fa-user-edit"></i> 프로필 수정</a></li>
+                <li><a href="#" id="logout-button"><i class="fas fa-sign-out-alt"></i> 로그아웃</a></li>
+            </ul>
+        </div>
+        <button id="menu-toggle" class="menu-toggle-btn"><i class="fas fa-bars"></i></button>
+    </div>
+    <nav id="main-menu" class="main-nav">
+        <ul>
+            <li><a href="/"><i class="fas fa-home"></i> 메인 (Home)</a></li>
+            <li><a href="/fields"><i class="fas fa-search"></i> 구장검색</a></li>
+            <li><a href="/community"><i class="fas fa-users"></i> 커뮤니티</a></li>
+            <li id="nav-chat-link-li"><a href="/chat" id="nav-chat-link"><i class="fas fa-comments"></i> 실시간채팅</a></li>
+            <li><a href="/schedule"><i class="fas fa-calendar-alt"></i> 일정</a></li>
+            <li><a href="/login" id="nav-login-link"><i class="fas fa-sign-in-alt"></i> 로그인</a></li>
+            <li style="display:none;"><a href="#" id="nav-logout-link"><i class="fas fa-sign-out-alt"></i> 로그아웃</a></li>
+        </ul>
+    </nav>
+</header>
+<main class="friends-main">
+    <div class="friends-container">
+        <h1 class="friends-title"><i class="fas fa-users-cog"></i> 친구/팀원 관리</h1>
+
+        <div class="friends-tabs">
+            <button class="tab-button active" data-tab="list">친구 목록</button>
+            <button class="tab-button" data-tab="requests">요청 관리</button>
+            <button class="tab-button" data-tab="team">팀 관리</button>
+            <button class="tab-button" data-tab="search">친구 검색</button>
+        </div>
+
+        <div id="friends-content">
+            <div id="list" class="tab-content active">
+                <div id="friend-list">
+                </div>
+            </div>
+
+            <div id="requests" class="tab-content" style="display: none;">
+                <div id="request-list">
+                </div>
+            </div>
+
+            <!-- ⭐⭐ ERD 반영: 팀 관리 탭 내용 ⭐⭐ -->
+            <div id="team" class="tab-content" style="display: none;">
+                <button class="btn-chat" style="margin-bottom: 20px; float: right;" onclick="location.href='/team/create'">
+                    <i class="fas fa-plus-circle"></i> 새 팀 생성
+                </button>
+                <h3 style="font-size: 20px; margin-bottom: 15px;">나의 팀 목록</h3>
+                <div id="team-list">
+                    <!-- JS 로직으로 팀 카드가 여기에 삽입됩니다 -->
+                    <p class="no-team-message">현재 소속된 팀이 없습니다.</p>
+                </div>
+            </div>
+            <!-- ⭐⭐ 팀 관리 탭 내용 끝 ⭐⭐ -->
+
+            <div id="search" class="tab-content" style="display: none;">
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="friend-search-input" placeholder="닉네임으로 검색" style="flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                    <button class="btn-chat" style="padding: 10px 20px;" onclick="searchFriendList(true)">검색</button>
+                </div>
+                <div id="search-results">
+                    <p style="color: #999;">닉네임을 검색하여 친구를 추가하세요.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    // --- (★공통★) 메뉴 토글 및 인증 로직 (유지) ---
+    const menuToggle = document.getElementById('menu-toggle');
+    const mainMenu = document.getElementById('main-menu');
+    const profileMenuToggle = document.getElementById('profile-menu-toggle');
+    const profileMenu = document.getElementById('profile-menu');
+    const logoutButton = document.getElementById('logout-button');
+    const navNotificationsLink = document.getElementById('nav-notifications-link');
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const navChatLinkElement = document.getElementById('nav-chat-link-li');
+    const navLoginLink = document.getElementById('nav-login-link');
+    const navLogoutLink = document.getElementById('nav-logout-link');
+
+
+    // 더미 친구 데이터
+    const MOCK_FRIENDS_LIST = [
+        { name: 'UserA', status: '온라인', lastActive: '방금 전', id: 100 },
+        { name: 'UserB', status: '오프라인', lastActive: '1시간 전', id: 101 },
+        { name: '캡틴손', status: '온라인', lastActive: '5분 전', id: 102 },
+    ];
+
+    // 더미 요청 데이터
+    const MOCK_REQUESTS = [
+        { id: 1, type: '받은 요청', name: '새친구1', userId: 'newuser1' },
+        { id: 2, type: '보낸 요청', name: '새친구2', userId: 'newuser2' },
+    ];
+
+    // ⭐⭐ 추가: 더미 팀 데이터 (ERD: Team, User_Team 반영) ⭐⭐
+    const MOCK_TEAMS = [
+        { id: 1, name: "FC 매칭 히어로즈", leader: "UserA", members: ["UserA", "캡틴손", "구원투수"], size: 10, current: 3, logo: "fas fa-shield-alt" },
+        { id: 2, name: "수원 최강 독수리", leader: "나의닉네임", members: ["나의닉네임", "UserB"], size: 8, current: 2, logo: "fas fa-futbol" },
+    ];
+    // ⭐⭐ 더미 팀 데이터 끝 ⭐⭐
+
+
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            mainMenu.classList.toggle('show');
+            if (profileMenu) profileMenu.classList.remove('show');
+        });
+    }
+    if (profileMenuToggle) {
+        profileMenuToggle.addEventListener('click', () => {
+            profileMenu.classList.toggle('show');
+            if (mainMenu) mainMenu.classList.remove('show');
+        });
+    }
+    document.addEventListener('click', (event) => {
+        const isClickInsideHeader = document.querySelector('header').contains(event.target);
+        if (!isClickInsideHeader) {
+            mainMenu.classList.remove('show');
+            if (profileMenu) profileMenu.classList.remove('show');
+        }
+    });
+
+    // --- 탭 전환 로직 ---
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const tabName = button.dataset.tab;
+
+            // 탭 버튼 활성화 상태 변경
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            // 내용 전환 및 렌더링
+            tabContents.forEach(content => {
+                content.style.display = 'none';
+            });
+            document.getElementById(tabName).style.display = 'block';
+
+            // 모든 항목의 active 클래스 제거 (새 탭 로드 시 액션 버튼 숨기기)
+            document.querySelectorAll('.friend-list-item, .request-list-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+
+            // 특정 탭 내용 로드 함수 호출
+            if (tabName === 'list') {
+                renderFriendList(MOCK_FRIENDS_LIST);
+            } else if (tabName === 'requests') {
+                renderRequestList(MOCK_REQUESTS);
+            } else if (tabName === 'team') { // ⭐⭐ 팀 관리 탭 로드 ⭐⭐
+                renderTeamList(MOCK_TEAMS);
+            }
+        });
+    });
+
+    // ⭐⭐ 팀 목록 렌더링 함수 ⭐⭐
+    function renderTeamList(teams) {
+        const listContainer = document.getElementById('team-list');
+        listContainer.innerHTML = '';
+
+        if (teams.length === 0) {
+            listContainer.innerHTML = `<p class="no-team-message">현재 소속된 팀이 없습니다. 팀을 생성하거나 초대를 기다려주세요.</p>`;
+            return;
+        }
+
+        teams.forEach(team => {
+            const card = document.createElement('div');
+            card.className = 'team-card';
+
+            const membersList = team.members.map(member =>
+                `<li><i class="fas fa-user-circle" style="color: #6c5ce7;"></i> ${member} ${member === team.leader ? '(팀장)' : ''}</li>`
+            ).join('');
+
+            card.innerHTML = `
+                <button class="btn-manage-team" onclick="location.href='/team/manage?id=${team.id}'">
+                    <i class="fas fa-cog"></i> 관리
+                </button>
+                <h4><i class="${team.logo}"></i> ${team.name}</h4>
+                <div class="team-meta">
+                    <p>팀장: ${team.leader}</p>
+                    <p>인원: ${team.current} / ${team.size}명</p>
+                </div>
+                <ul class="team-members-list">
+                    ${membersList}
+                </ul>
+            `;
+            listContainer.appendChild(card);
+        });
+    }
+
+
+    // --- 친구 목록 렌더링 함수 (액션 버튼 토글 추가) ---
+    function renderFriendList(friends) {
+        const listContainer = document.getElementById('friend-list');
+        const friendCountDisplay = document.querySelector('.friends-tabs button[data-tab="list"]');
+        listContainer.innerHTML = '';
+
+        if (friends.length === 0) {
+            listContainer.innerHTML = `<p style="text-align: center; color: #999; padding: 20px;">등록된 친구가 없습니다.</p>`;
+        }
+
+        friends.forEach(friend => {
+            const item = document.createElement('div');
+            item.className = 'friend-list-item';
+            item.dataset.id = friend.id; // 항목 ID 추가
+
+            const statusClass = friend.status === '온라인' ? '' : 'offline';
+
+            // ⭐⭐ 액션 버튼을 friend-actions 내부에 배치 ⭐⭐
+            item.innerHTML = `
+                <div class="friend-info">
+                    <span class="friend-name">${friend.name}</span>
+                    <span class="friend-status ${statusClass}">${friend.status} (${friend.lastActive})</span>
+                </div>
+                <div class="friend-actions">
+                    <button class="btn-chat" onclick="handleFriendAction('chat', ${friend.id}, event)"><i class="fas fa-comment-dots"></i> 채팅</button>
+                    <button class="btn-remove" onclick="handleFriendAction('remove', ${friend.id}, event)"><i class="fas fa-user-minus"></i> 제거</button>
+                </div>
+            `;
+
+            // ⭐⭐ 친구 목록 항목 클릭 토글 이벤트 ⭐⭐
+            item.addEventListener('click', toggleActiveItem);
+
+            listContainer.appendChild(item);
+        });
+
+        friendCountDisplay.textContent = `친구 목록 (${friends.length})`;
+    }
+
+    // --- 요청 목록 렌더링 함수 (액션 버튼 토글 추가) ---
+    function renderRequestList(requests) {
+        const listContainer = document.getElementById('request-list');
+        const requestCountDisplay = document.querySelector('.friends-tabs button[data-tab="requests"]');
+        listContainer.innerHTML = '';
+
+        if (requests.length === 0) {
+            listContainer.innerHTML = `<p style="text-align: center; color: #999; padding: 20px;">현재 주고 받은 요청이 없습니다.</p>`;
+        }
+
+        requests.forEach(request => {
+            const isReceived = request.type === '받은 요청';
+
+            const item = document.createElement('div');
+            item.className = 'friend-list-item request-list-item';
+            item.dataset.id = request.id;
+            item.dataset.userId = request.userId;
+
+            // ⭐⭐ 액션 버튼을 request-actions 내부에 배치 ⭐⭐
+            item.innerHTML = `
+                <div class="friend-info">
+                    <span class="request-type" style="color: ${isReceived ? '#6c5ce7' : '#e74c3c'}; font-weight: 700;">[${request.type}]</span>
+                    <span class="friend-name">${request.name}</span>
+                </div>
+                <div class="request-actions">
+                    ${isReceived ? `
+                        <button class="btn-chat" style="background-color: #2ecc71;" onclick="handleRequestAction('accept', '${request.userId}', event)">수락</button>
+                        <button class="btn-remove" onclick="handleRequestAction('reject', '${request.userId}', event)">거절</button>
+                    ` : `
+                        <button class="btn-remove" onclick="handleRequestAction('cancel', '${request.userId}', event)">취소</button>
+                    `}
+                </div>
+            `;
+
+            // ⭐⭐ 요청 목록 항목 클릭 토글 이벤트 ⭐⭐
+            item.addEventListener('click', toggleActiveItem);
+
+            listContainer.appendChild(item);
+        });
+
+        requestCountDisplay.textContent = `요청 관리 (${requests.length})`;
+    }
+
+    // ⭐⭐ 공통 토글 함수 (클릭 시 액션 버튼 노출) ⭐⭐
+    function toggleActiveItem(e) {
+        // 클릭된 요소가 액션 버튼 자체이거나 그 자손이면 부모 항목의 토글을 막습니다.
+        if (e.target.closest('.friend-actions') || e.target.closest('.request-actions')) {
+            return;
+        }
+
+        const currentItem = e.currentTarget;
+        const parentContainer = currentItem.parentElement;
+
+        // 같은 컨테이너 내의 다른 활성화된 항목 비활성화
+        parentContainer.querySelectorAll('.active').forEach(item => {
+            if (item !== currentItem) {
+                item.classList.remove('active');
+            }
+        });
+
+        // 현재 항목 활성화/비활성화 토글
+        currentItem.classList.toggle('active');
+    }
+
+    // ⭐⭐ 친구 액션 핸들러 (채팅 시작, 제거) ⭐⭐
+    function handleFriendAction(action, id, event) {
+        event.stopPropagation(); // 부모 항목 클릭 이벤트 방지
+        const friend = MOCK_FRIENDS_LIST.find(f => f.id === id);
+
+        if (action === 'chat') {
+            alert(`${friend.name}님과 채팅 시작!`);
+            // location.href = `/chat?user=${friend.name}`;
+        } else if (action === 'remove') {
+            if (confirm(`${friend.name}님을 친구 목록에서 제거하시겠습니까?`)) {
+                // 실제 API 호출 로직...
+                alert(`${friend.name} 제거 완료 (시뮬레이션)`);
+                // UI에서 제거
+                MOCK_FRIENDS_LIST.splice(MOCK_FRIENDS_LIST.findIndex(f => f.id === id), 1);
+                renderFriendList(MOCK_FRIENDS_LIST);
+            }
+        }
+    }
+
+    // ⭐⭐ 요청 액션 핸들러 (수락, 거절, 취소) ⭐⭐
+    function handleRequestAction(action, userId, event) {
+        event.stopPropagation(); // 부모 항목 클릭 이벤트 방지
+        const requestIndex = MOCK_REQUESTS.findIndex(r => r.userId === userId);
+
+        if (action === 'accept') {
+            alert(`${userId}님의 요청을 수락했습니다. (시뮬레이션)`);
+            // 친구 목록에 추가 로직 필요
+        } else if (action === 'reject' || action === 'cancel') {
+            alert(`${userId}님의 요청을 ${action === 'reject' ? '거절' : '취소'}했습니다. (시뮬레이션)`);
+        }
+
+        // UI에서 요청 제거
+        if (requestIndex !== -1) {
+            MOCK_REQUESTS.splice(requestIndex, 1);
+            renderRequestList(MOCK_REQUESTS);
+        }
+    }
+
+
+    // --- 초기화 및 이벤트 리스너 ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const accessToken = localStorage.getItem('accessToken');
+
+        // ⭐⭐ 회원 전용 페이지 접근 제어 ⭐⭐
+        if (!accessToken) {
+            alert("❌ 회원 전용 페이지입니다.\n로그인 후에 이용하실 수 있습니다.");
+            window.location.href = '/login';
+            return;
+        }
+
+        if (accessToken) {
+            if (profileMenuToggle) profileMenuToggle.style.display = 'block';
+            if (navLoginLink) navLoginLink.parentElement.style.display = 'none';
+            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'list-item';
+            // 알림 배지 로직 호출 (생략)
+        }
+
+        // 초기 탭 로드 (친구 목록)
+        renderFriendList(MOCK_FRIENDS_LIST);
+        renderRequestList(MOCK_REQUESTS);
+
+        // 팀 관리 탭의 초기 카운트 업데이트
+        document.querySelector('.friends-tabs button[data-tab="team"]').textContent = `팀 관리 (${MOCK_TEAMS.length})`;
+
+        // ⭐⭐ 실시간 채팅 링크 접근 제어 (공통 적용) ⭐⭐
+        if (navChatLinkElement) {
+            const chatLinkAnchor = navChatLinkElement.querySelector('a');
+            if (chatLinkAnchor) {
+                chatLinkAnchor.addEventListener('click', function(e) {
+                    const currentToken = localStorage.getItem('accessToken');
+                    if (!currentToken) {
+                        e.preventDefault();
+                        alert("❌ 실시간 채팅은 회원만 이용할 수 있습니다.");
+                        window.location.href = '/login';
+                    }
+                });
+            }
+        }
+    });
+</script>
