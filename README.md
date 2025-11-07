@@ -1,5 +1,9 @@
 # Backend5_1_Multi_FC
-백엔드 5회차 프로젝트
+백엔드 5회차 프로젝트 MULTI_FC
+
+- 본 프로젝트는 실시간 WebSocket 기능을 기반으로 풋살을 즐기는 사용자들이 손쉽게 팀을 구성하고 소통할 수 있는 웹 플랫폼을 개발하는 것을 목표로 합니다.
+
+<img width="1901" height="908" alt="KakaoTalk_20251107_131324524" src="https://github.com/user-attachments/assets/8bf12272-329b-4487-b0ee-93fa57cd92c3" />
 
 ## ⚽ Multi_FC 프로젝트 문서 구조
 
