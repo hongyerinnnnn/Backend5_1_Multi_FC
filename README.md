@@ -120,7 +120,7 @@
 - build(gradle): mybatis-spring-boot-starter 버전 업
 
 **🔀 PR 규칙**
-- 원본 레포를 레가한 뒤 로컬에서 clone후 작업 →  
+- 원본 레포를 fork한 뒤 로컬에서 clone후 작업 →  
 - 포크한 레포의 **본인 이름 브랜치**로 push →  
 - 원본 레포의 **동일 이름 브랜치**로 PR 요청합니다.  
 - **‼️원본 `main` 으로 직접 PR 금지‼️**
