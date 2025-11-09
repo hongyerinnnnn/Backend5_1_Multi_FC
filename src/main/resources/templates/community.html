@@ -169,7 +169,7 @@
         <ul>
             <li><a href="/" class="active"><i class="fas fa-home"></i> 메인 (Home)</a></li>
             <li><a href="/fields"><i class="fas fa-search"></i> 구장검색</a></li>
-            <li><a href="/community"><i class="fas fa-users"></i> 커뮤니티</a></li>
+            <li><a href="/community" ><i class="fas fa-users"></i> 커뮤니티</a></li>
             <li id="nav-chat-link-li"><a href="/chat" id="nav-chat-link"><i class="fas fa-comments"></i> 실시간채팅</a></li>
             <li><a href="/login" id="nav-login-link"><i class="fas fa-sign-in-alt"></i> 로그인</a></li>
             <li><a href="#" id="nav-logout-link"><i class="fas fa-sign-out-alt"></i> 로그아웃</a></li>
@@ -406,13 +406,16 @@
         const accessToken = localStorage.getItem('accessToken');
         const currentPath = window.location.pathname;
 
-        // ⭐⭐ 회원 전용 페이지 접근 차단 로직 ⭐⭐
-        if (!accessToken) {
-            alert("❌ 회원 전용 페이지입니다.\n로그인 후에 이용하실 수 있습니다.");
-            localStorage.setItem('redirectAfterLogin', currentPath);
-            window.location.href = '/login';
-            return;
+        if (accessToken) {
+            if (profileMenuToggle) profileMenuToggle.style.display = 'block';
+            if (navLoginLink) navLoginLink.parentElement.style.display = 'none';
+            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'list-item';
+        } else {
+            if (profileMenuToggle) profileMenuToggle.style.display = 'none';
+            if (navLoginLink) navLoginLink.parentElement.style.display = 'list-item';
+            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'none';
         }
+
 
         // 1. 로그인 상태에 따른 UI 및 알림 배지 처리
         if (accessToken) {

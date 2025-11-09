@@ -214,12 +214,15 @@
 <header class="quick-menu">
     <div class="logo"><a href="/">Multi FC</a></div>
     <div class="header-icons">
-        <button id="profile-menu-toggle" class="profile-icon" style="position: relative; display: none;">
+        <button id="profile-menu-toggle" class="profile-icon" style="position: relative;">
             <i class="fas fa-user-circle"></i>
             <span id="notification-badge" class="notification-badge"></span>
         </button>
         <div id="profile-menu" class="user-menu">
-            <div class="user-info"> <strong><span id="user-menu-username">사용자</span>님</strong> <p>환영합니다!</p> </div>
+            <div class="user-info">
+                <strong><span id="user-menu-username">사용자</span>님</strong>
+                <p>환영합니다!</p>
+            </div>
             <ul>
                 <li><a href="/notifications" id="nav-notifications-link"><i class="fas fa-bell"></i> 알림 목록</a></li>
                 <li><a href="/mypage"><i class="fas fa-user"></i> 마이페이지</a></li>
@@ -234,11 +237,10 @@
         <ul>
             <li><a href="/" class="active"><i class="fas fa-home"></i> 메인 (Home)</a></li>
             <li><a href="/fields"><i class="fas fa-search"></i> 구장검색</a></li>
-            <li class="active"><a href="/community" class="active"><i class="fas fa-users"></i> 커뮤니티</a></li>
-            <li><a href="/chat"><i class="fas fa-comments"></i> 실시간채팅</a></li>
-
+            <li><a href="/community" ><i class="fas fa-users"></i> 커뮤니티</a></li>
+            <li id="nav-chat-link-li"><a href="/chat" id="nav-chat-link"><i class="fas fa-comments"></i> 실시간채팅</a></li>
             <li><a href="/login" id="nav-login-link"><i class="fas fa-sign-in-alt"></i> 로그인</a></li>
-            <li style="display:none;"><a href="#" id="nav-logout-link"><i class="fas fa-sign-out-alt"></i> 로그아웃</a></li>
+            <li><a href="#" id="nav-logout-link"><i class="fas fa-sign-out-alt"></i> 로그아웃</a></li>
         </ul>
     </nav>
 </header>
@@ -303,22 +305,41 @@
     const CURRENT_USER_ID = 1000; // 현재 로그인된 사용자 ID 가정 (권한 체크용: 관리자와 동일)
     const CURRENT_USER_WRITER_NAME = '관리자'; // 현재 로그인된 사용자 이름 가정
 
-    // --- DOM 로드 및 초기화 ---
     document.addEventListener('DOMContentLoaded', () => {
+        // 1. 헤더 요소들 먼저 잡기
+        const profileMenuToggle = document.getElementById('profile-menu-toggle');
+        const navLoginLink = document.getElementById('nav-login-link');
+        const navLogoutLink = document.getElementById('nav-logout-link');
 
-        // ⭐⭐ URL에서 postId를 가져와 loadPostDetail 함수에 전달 ⭐⭐
+        // 2. 토큰 가져오기
+        const accessToken = localStorage.getItem('accessToken');
+
+        // 3. 로그인/비로그인에 따른 헤더 UI 처리
+        if (accessToken) {
+            if (profileMenuToggle) profileMenuToggle.style.display = 'block';
+            if (navLoginLink) navLoginLink.parentElement.style.display = 'none';
+            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'list-item';
+        } else {
+            if (profileMenuToggle) profileMenuToggle.style.display = 'none';
+            if (navLoginLink) navLoginLink.parentElement.style.display = 'list-item';
+            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'none';
+        }
+
+        // 4. 여기서부터는 원래 하던 게시글 로딩 로직
         const urlParams = new URLSearchParams(window.location.search);
         const postIdFromParam = urlParams.get('postId');
 
         const pathSegments = window.location.pathname.split('/');
         const postIdFromPath = pathSegments.pop() || pathSegments.pop();
 
-        // ID가 유효한 숫자인 경우만 loadPostDetail 호출, 아니면 기본값 10(공지) 로드
-        const targetPostId = postIdFromParam || (postIdFromPath && !isNaN(parseInt(postIdFromPath)) ? parseInt(postIdFromPath) : 10);
+        const targetPostId =
+            postIdFromParam ||
+            (postIdFromPath && !isNaN(parseInt(postIdFromPath))
+                ? parseInt(postIdFromPath)
+                : 10);
 
         loadPostDetail(targetPostId);
     });
-
     function loadPostDetail(postId) {
         // 1. URL에서 받은 postId로 MOCK_POSTS 배열에서 해당 게시글을 찾습니다.
         const post = MOCK_POSTS.find(p => p.postId === parseInt(postId));

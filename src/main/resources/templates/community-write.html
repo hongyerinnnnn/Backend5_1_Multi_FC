@@ -323,6 +323,15 @@
             window.location.href = '/login';
             return;
         }
+        if (accessToken) {
+            if (profileMenuToggle) profileMenuToggle.style.display = 'block';
+            if (navLoginLink) navLoginLink.parentElement.style.display = 'none';
+            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'list-item';
+        } else {
+            if (profileMenuToggle) profileMenuToggle.style.display = 'none';
+            if (navLoginLink) navLoginLink.parentElement.style.display = 'list-item';
+            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'none';
+        }
 
         // ⭐⭐⭐ 1. Quill Editor 초기화 - Undo/Redo 기능 연결 ⭐⭐⭐
         const toolbarOptions = [
