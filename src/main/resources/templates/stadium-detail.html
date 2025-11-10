@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="'구장 상세 (' + ${stadiumId} + ') - FUTSAL MATCH'">FUTSAL MATCH - 구장 상세</title>
+    <title th:text="'구장 상세 (' + ${stadiumId} + ') - MULTI FC'">MULTI FC - 구장 상세</title>
 
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
@@ -62,7 +62,7 @@
             border-radius: 10px;
             padding: 15px;
             border: 1px solid #ddd;
-            max-height: 800px;
+            max-height: 685px;
             overflow-y: auto;
         }
 
@@ -71,6 +71,9 @@
             border-radius: 10px;
             padding: 20px;
             margin-top: 0;
+        }
+        .info-card h2{
+            margin-bottom: 20px;
         }
         .info-item {
             display: flex;
@@ -102,7 +105,6 @@
 
         .action-button-group {
             text-align: center;
-            margin-top: 30px;
             grid-column: 1 / 2;
             display: flex;
             justify-content: center;
@@ -413,7 +415,7 @@
 <body>
 
 <header class="quick-menu">
-    <div class="logo"><a href="/">FUTSAL MATCH</a></div>
+    <div class="logo"><a href="/">MULTI FC</a></div>
     <div class="header-icons">
         <button id="profile-menu-toggle" class="profile-icon" style="position: relative; display: block;">
             <i class="fas fa-user-circle"></i>
@@ -473,15 +475,6 @@
                 <div class="info-item">
                     <i class="fas fa-users"></i>
                     <span id="stadium-size">5 vs 5</span>
-                </div>
-
-                <div class="amenities-list">
-                    <strong>편의 시설 (ERD: etc_info)</strong>
-                    <div id="stadium-amenities">
-                        <span class="amenity-tag">샤워실 완비</span>
-                        <span class="amenity-tag">넉넉한 주차장</span>
-                        <span class="amenity-tag">대기실 제공</span>
-                    </div>
                 </div>
             </div>
 
@@ -964,8 +957,7 @@
             address: "서울 강남구 테헤란로 123",
             contact: "02-1234-5678",
             fee: "50,000원/시간",
-            size: "6 vs 6",
-            etcInfo: ["샤워실 완비", "넉넉한 주차장", "대기실 제공", "음료 자판기"]
+            size: "5 vs 5"
         };
 
         document.getElementById('stadium-name').textContent = `${DUMMY_DATA.name} (ID: ${stadiumId})`;
@@ -974,10 +966,6 @@
         document.getElementById('stadium-fee').textContent = DUMMY_DATA.fee;
         document.getElementById('stadium-size').textContent = DUMMY_DATA.size;
 
-        const amenitiesContainer = document.getElementById('stadium-amenities');
-        amenitiesContainer.innerHTML = DUMMY_DATA.etcInfo.map(item =>
-            `<span class="amenity-tag">${item}</span>`
-        ).join('');
 
         let baseReviews = generateMockReviews();
         const localReviews = JSON.parse(localStorage.getItem(`reviews_${stadiumId}`)) || [];
