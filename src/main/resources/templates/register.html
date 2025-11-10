@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FUTSAL MATCH - 회원가입</title>
+    <title>MULTI FC - 회원가입</title>
 
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
@@ -40,7 +40,7 @@
 
 <body>
 <header class="quick-menu">
-    <div class="logo"><a href="/">FUTSAL MATCH</a></div>
+    <div class="logo"><a href="/">MULTI FC</a></div>
     <div class="header-icons">
         <button id="menu-toggle" class="menu-toggle-btn"><i class="fas fa-bars"></i></button>
     </div>
@@ -48,11 +48,11 @@
 
 <main class="login-page-main">
     <div class="main-wrapper">
-        <div class="login-section">
+        <div class="main-section">
             <div class="login-container">
                 <h1 class="title-login">Sign Up</h1>
                 <p style="margin-bottom: 25px; font-size: 15px; color: #555;">
-                    FUTSAL MATCH 계정을 만들고 매치를 시작하세요.
+                    MULTI FC 계정을 만들고 매치를 시작하세요.
                 </p>
 
                 <p id="error-message" class="error-message" style="display:none;"></p>
@@ -60,13 +60,9 @@
                 <form id="register-form" enctype="multipart/form-data">
 
                     <div class="input-group">
-                        <label for="name">이름 (Full Name)</label>
-                        <input type="text" id="name" name="name" placeholder="실명을 입력해주세요" required>
-                    </div>
-
-                    <div class="input-group">
                         <label for="email">이메일 (Email)</label>
                         <input type="email" id="email" name="email" placeholder="비밀번호 찾기 등에 사용" required>
+                        <p id="email-message" class="info-message" style="display:none;"></p>
                     </div>
 
                     <div class="input-group">
@@ -166,7 +162,7 @@
                 </div>
             </div>
         </div>
-        <div class="background-image-section"></div>
+
     </div>
 </main>
 
@@ -195,25 +191,41 @@
         const confirmPasswordInput = document.getElementById('confirm-password');
         const errorMsg = document.getElementById('error-message');
         const registerSubmitBtn = document.getElementById('register-submit-btn');
+
+        const emailInput = document.getElementById('email');
+        const emailMsg = document.getElementById('email-message');   // 🔹 id 오타 수정
+
         const usernameInput = document.getElementById('username');
         const nicknameInput = document.getElementById('nickname');
+
         const usernameMsg = document.getElementById('username-message');
         const nicknameMsg = document.getElementById('nickname-message');
+
         const termsCheckbox = document.getElementById('terms-agree');
 
+        let isEmailValid = true;       // 🔹 이메일 유효 여부
         let isUsernameValid = false;
         let isNicknameValid = false;
 
         function checkSubmitButtonState() {
-            registerSubmitBtn.disabled = !(isUsernameValid && isNicknameValid);
+            // 이메일까지 모두 유효할 때만 버튼 활성화
+            registerSubmitBtn.disabled = !(isEmailValid && isUsernameValid && isNicknameValid);
             registerSubmitBtn.textContent = registerSubmitBtn.disabled
                 ? "Create Account (중복 확인 필요)"
                 : "Create Account";
         }
 
+        // 🔹 필드별 더미 중복 체크 함수
         async function checkDuplicate(field, value) {
-            await new Promise(r => setTimeout(r, 400));
-            return value.toUpperCase() === "QWER";
+            await new Promise(r => setTimeout(r, 400)); // 서버 호출 시뮬레이션
+
+            if (field === "email") {
+                // 이메일은 qwer@example.com 과 같을 때만 중복으로 처리
+                return value.trim().toLowerCase() === "qwer@example.com";
+            }
+
+            // 아이디/닉네임은 "QWER" 더미 값으로 중복 처리
+            return value.trim().toUpperCase() === "QWER";
         }
 
         function showErrorMessage(element, message) {
@@ -227,6 +239,30 @@
         function hideMessage(element) {
             element.style.display = "none";
         }
+
+        // --- 이메일 자동 중복 확인 ---
+        let emailTimer;
+        emailInput.addEventListener('input', () => {
+            clearTimeout(emailTimer);
+            const value = emailInput.value.trim();
+            hideMessage(emailMsg);
+            isEmailValid = true;
+            checkSubmitButtonState();
+
+            if (!value) return;
+
+            emailTimer = setTimeout(async () => {
+                const isDuplicate = await checkDuplicate("email", value);
+                if (isDuplicate) {
+                    showErrorMessage(emailMsg, "이 이메일은 이미 사용 중입니다. 다른 이메일을 입력해 주세요.");
+                    isEmailValid = false;
+                } else {
+                    hideMessage(emailMsg);
+                    isEmailValid = true;
+                }
+                checkSubmitButtonState();
+            }, 500);
+        });
 
         // --- 아이디 자동 중복 확인 ---
         let usernameTimer;
@@ -281,8 +317,8 @@
             e.preventDefault();
             errorMsg.style.display = 'none';
 
-            if (!isUsernameValid || !isNicknameValid) {
-                errorMsg.textContent = '❌ 아이디와 닉네임 중복 확인을 완료해주세요.';
+            if (!isEmailValid || !isUsernameValid || !isNicknameValid) {
+                errorMsg.textContent = '❌ 이메일, 아이디, 닉네임 중복 확인을 완료해주세요.';
                 errorMsg.style.display = 'block';
                 return;
             }
@@ -342,5 +378,6 @@
         checkSubmitButtonState();
     });
 </script>
+
 </body>
 </html>

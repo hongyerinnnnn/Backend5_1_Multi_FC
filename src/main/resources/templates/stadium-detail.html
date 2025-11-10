@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="'구장 상세 (' + ${stadiumId} + ') - FUTSAL MATCH'">FUTSAL MATCH - 구장 상세</title>
+    <title th:text="'구장 상세 (' + ${stadiumId} + ') - MULTI FC'">MULTI FC - 구장 상세</title>
 
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
@@ -16,20 +16,30 @@
             min-height: 100vh;
         }
         .stadium-container {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
             padding: 40px;
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
         }
         .stadium-title {
+            grid-column: 1 / -1;
             font-size: 32px;
             font-weight: 800;
-            color: #2ecc71; /* 구장/경기장 강조색 */
-            margin-bottom: 25px;
+            color: #333;
+            margin-bottom: 5px;
             border-bottom: 3px solid #6c5ce7;
             padding-bottom: 10px;
+        }
+
+        .detail-left-column {
+            grid-column: 1 / 2;
+            display: flex;
+            flex-direction: column;
         }
 
         .map-area {
@@ -44,11 +54,26 @@
             font-size: 20px;
             color: #888;
         }
+
+        .review-right-column {
+            grid-column: 2 / 3;
+            grid-row: 2 / span 2;
+            background: #fcfcfc;
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            max-height: 685px;
+            overflow-y: auto;
+        }
+
         .info-card {
             border: 1px solid #ddd;
             border-radius: 10px;
             padding: 20px;
-            margin-top: 20px;
+            margin-top: 0;
+        }
+        .info-card h2{
+            margin-bottom: 20px;
         }
         .info-item {
             display: flex;
@@ -77,35 +102,324 @@
             margin-bottom: 8px;
             font-weight: 600;
         }
+
         .action-button-group {
             text-align: center;
-            margin-top: 30px;
+            grid-column: 1 / 2;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
         }
         .action-button-group a {
             display: inline-block;
-            padding: 12px 25px;
+            padding: 14px 28px;
             font-weight: 700;
             border-radius: 30px;
             text-decoration: none;
-            margin: 0 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+            flex-grow: 0;
+            flex-shrink: 0;
         }
         .btn-schedule {
-            background-color: #2ecc71;
+            background-color: #333;
             color: white;
+            border: 2px solid #1a1a1a;
         }
-        .btn-review {
-            background-color: #f39c12;
+        .btn-schedule:hover {
+            background-color: #1a1a1a;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        .btn-create-match {
+            background-color: #e74c3c;
             color: white;
+            border: 2px solid #c0392b;
+        }
+        .btn-create-match:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        .review-right-column h2 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        #review-list {
+            min-height: 300px;
+        }
+        .review-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .review-item:last-child {
+            border-bottom: none;
+        }
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .review-user {
+            font-weight: 700;
+            color: #6c5ce7;
+            display: flex;
+            align-items: center;
+        }
+        .review-date {
+            color: #999;
+        }
+        .review-content {
+            font-size: 15px;
+            line-height: 1.5;
+            color: #333;
+        }
+        .review-item .star-display {
+            color: #f39c12;
+            font-size: 18px;
+            margin-right: 10px;
+            letter-spacing: 2px;
+        }
+
+        .review-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 5px;
+            justify-content: flex-end;
+        }
+        .review-actions button {
+            background: none;
+            border: none;
+            color: #6c5ce7;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 2px 5px;
+            transition: color 0.2s;
+        }
+        .review-actions button.delete {
+            color: #e74c3c;
+        }
+
+        .pagination-controls {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        .pagination-controls button {
+            background: none;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 5px 10px;
+            margin: 0 5px;
+            color: #555;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .pagination-controls button:hover:not(:disabled) {
+            background-color: #f0f0f0;
+        }
+        .pagination-controls button.active {
+            background-color: #6c5ce7;
+            color: white;
+            border-color: #6c5ce7;
+        }
+        .pagination-controls button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .tab-header {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 15px;
+        }
+        .tab-button {
+            flex: 1;
+            text-align: center;
+            padding: 10px 0;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 15px;
+            border: none;
+            background: none;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .tab-button.active {
+            color: #6c5ce7;
+            border-bottom: 3px solid #6c5ce7;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ✅ 경기 개설 모달 (채팅 모달과 비슷한 구조) */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-content {
+            background: #fff;
+            border-radius: 15px;
+            padding: 25px 25px 20px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+        }
+        .modal-content h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            font-weight: 800;
+            color: #2c3e50;
+        }
+        .modal-content label {
+            display: block;
+            font-size: 15px;
+            font-weight: 700;
+            color: #34495e;
+            margin-top: 10px;
+            margin-bottom: 6px;
+        }
+        .modal-content input[type="text"],
+        .modal-content input[type="date"],
+        .modal-content select {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .modal-content input[type="text"]:focus,
+        .modal-content input[type="date"]:focus,
+        .modal-content select:focus {
+            border-color: #6c5ce7;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+        }
+        .modal-content input[type="text"][readonly] {
+            background-color: #e9ecef;
+            color: #495057;
+            font-weight: 600;
+            border: 1px solid #ced4da;
+        }
+        .time-select-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .time-select-group select {
+            flex-grow: 1;
+            min-width: 120px;
+        }
+        .time-select-group span {
+            font-size: 18px;
+            color: #555;
+            font-weight: 600;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn-cancel,
+        .btn-create {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-cancel {
+            background-color: #e0e0e0;
+            color: #555;
+        }
+        .btn-cancel:hover {
+            background-color: #bdbdbd;
+        }
+        .btn-create {
+            background-color: #333;
+            color: #fff;
+        }
+        .btn-create:hover {
+            background-color: #111;
+        }
+
+        /* ✅ 경기 목록 UI */
+        .match-filter {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .match-filter label {
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        .match-filter input[type="date"] {
+            padding: 6px 8px;
+            font-size: 14px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+        }
+        .match-list {
+            margin-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        .match-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .match-item:last-child {
+            border-bottom: none;
+        }
+        .match-item-time {
+            font-weight: 700;
+            color: #333;
+        }
+        .match-item-meta {
+            font-size: 13px;
+            color: #777;
+        }
+        .match-item:hover .match-item-time {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
 
 <header class="quick-menu">
-    <div class="logo"><a href="/">FUTSAL MATCH</a></div>
+    <div class="logo"><a href="/">MULTI FC</a></div>
     <div class="header-icons">
         <button id="profile-menu-toggle" class="profile-icon" style="position: relative; display: block;">
             <i class="fas fa-user-circle"></i>
+            <span id="notification-badge" class="notification-badge"></span>
         </button>
         <div id="profile-menu" class="user-menu">
             <div class="user-info">
@@ -124,8 +438,10 @@
     <nav id="main-menu" class="main-nav">
         <ul>
             <li><a href="/"><i class="fas fa-home"></i> 메인 (Home)</a></li>
-            <li><a href="/fields" class="active"><i class="fas fa-search"></i> 구장검색</a></li> <li><a href="/community"><i class="fas fa-users"></i> 커뮤니티</a></li>
-            <li><a href="/chat"><i class="fas fa-comments"></i> 실시간채팅</a></li>
+            <li><a href="/fields" class="active"><i class="fas fa-search"></i> 구장검색</a></li>
+            <li><a href="/community"><i class="fas fa-users"></i> 커뮤니티</a></li>
+            <li id="nav-chat-link-li"><a href="/chat" id="nav-chat-link"><i class="fas fa-comments"></i> 실시간채팅</a></li>
+            <li><a href="/schedule"><i class="fas fa-calendar-alt"></i> 일정</a></li>
         </ul>
     </nav>
 </header>
@@ -133,144 +449,636 @@
 <main class="stadium-main">
     <div class="stadium-container">
 
-        <h1 class="stadium-title" id="stadium-name">구장 이름 (ID: <span th:text="${stadiumId}">1</span>)</h1>
+        <h1 class="stadium-title" id="stadium-name">강남 풋살 아레나 (ID: <span th:text="${stadiumId}">1</span>)</h1>
 
-        <div class="map-area" id="map">
-            (KakaoMap API가 표시될 구장 위치)
-        </div>
+        <div class="detail-left-column">
 
-        <div class="info-card">
-            <h2>구장 기본 정보</h2>
-
-            <div class="info-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <span id="stadium-address">주소</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-phone"></i>
-                <span id="stadium-contact">연락처</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-won-sign"></i>
-                <span id="stadium-fee">시간당 비용</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-users"></i>
-                <span id="stadium-size">추천 매칭 사이즈</span>
+            <div class="map-area" id="map">
+                (KakaoMap API가 표시될 구장 위치)
             </div>
 
-            <div class="amenities-list">
-                <strong>편의 시설 (ERD: etc_info)</strong>
-                <div id="stadium-amenities">
-                    <!-- JS로 태그 삽입 -->
+            <div class="info-card">
+                <h2>구장 기본 정보</h2>
+
+                <div class="info-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span id="stadium-address">서울 강남구 테헤란로 123</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-phone"></i>
+                    <span id="stadium-contact">02-1234-5678</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-won-sign"></i>
+                    <span id="stadium-fee">50,000원/시간</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-users"></i>
+                    <span id="stadium-size">5 vs 5</span>
                 </div>
             </div>
+
+        </div>
+
+        <div class="review-right-column">
+
+            <!-- 탭 헤더 -->
+            <div class="tab-header">
+                <button id="tab-btn-match" class="tab-button active">경기</button>
+                <button id="tab-btn-review" class="tab-button">후기</button>
+            </div>
+
+            <!-- ✅ 경기 탭: 날짜 선택 + 경기 목록 -->
+            <div id="tab-match" class="tab-content">
+                <h2 style="font-size: 24px; color: #333; margin-bottom: 15px;">⚽ 경기 정보</h2>
+
+                <div class="match-filter">
+                    <label for="match-date-filter">날짜 선택</label>
+                    <input type="date" id="match-date-filter">
+                </div>
+
+                <div id="match-list" class="match-list">
+                    <p style="color:#777; font-size:13px; padding:10px 0;">
+                        날짜를 선택하면, 이 구장에서 진행 예정인 경기가 시간 기준으로 표시됩니다.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 후기 탭 -->
+            <div id="tab-review" class="tab-content active">
+                <h2 style="font-size: 24px; color: #333; margin-bottom: 15px;">
+                    ⭐ 구장 리뷰 (<span id="review-count">0</span>건)
+                </h2>
+
+                <div id="review-list"></div>
+
+                <div id="pagination-controls" class="pagination-controls" style="display:none;">
+                    <button id="prev-page">&lt;</button>
+                    <div id="page-numbers" style="display: inline;"></div>
+                    <button id="next-page">&gt;</button>
+                </div>
+            </div>
+
         </div>
 
         <div class="action-button-group">
             <a href="/schedule?stadiumId=1" class="btn-schedule" id="btn-schedule">
                 <i class="fas fa-calendar-alt"></i> 매치/일정 확인
             </a>
-            <a href="/community?category=review&stadiumId=1" class="btn-review" id="btn-review">
-                <i class="fas fa-star"></i> 구장 리뷰 보기
+
+            <!-- 이 버튼 클릭 시 모달 열기 -->
+            <a href="/match/create" class="btn-create-match" id="btn-create-match">
+                <i class="fas fa-plus-circle"></i> 경기 생성
             </a>
         </div>
+
     </div>
 </main>
 
+<!-- ✅ 경기 개설 모달 -->
+<div id="match-create-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h2>경기 개설</h2>
+
+        <label for="hostName">주최자</label>
+        <input type="text" id="hostName" value="로그인 사용자" readonly>
+
+        <label for="stadiumName" style="margin-top: 10px;">장소</label>
+        <input type="text" id="stadiumName" value="구장 정보 없음" readonly>
+        <input type="hidden" id="stadiumId" name="stadiumId">
+
+        <label for="matchDate" style="margin-top: 10px;">날짜</label>
+        <input type="date" id="matchDate" name="matchDate" required>
+
+        <label for="startTime" style="margin-top: 10px;">시간</label>
+        <div class="time-select-group">
+            <select id="startTime" name="startTime"></select>
+            <span>~</span>
+            <select id="endTime" name="endTime"></select>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="openMatchModal(false)">취소</button>
+            <button class="btn-create" onclick="submitMatchForm()">생성</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // --- (★공통★) 메뉴 토글 및 인증 로직 (필요한 경우 여기에 삽입) ---
+    // --- 공통 메뉴 토글 및 인증 로직 ---
     const menuToggle = document.getElementById('menu-toggle');
-    const mainMenu = document.getElementById('main-menu');
+    const mainMenu = document.getElementById('main-menu');        // ★ main-menu 로 수정
     const profileMenuToggle = document.getElementById('profile-menu-toggle');
-    const profileMenu = document.getElementById('profile-menu');
+    const profileMenu = document.getElementById('profile-menu');  // ★ profile-menu 로 수정
     const logoutButton = document.getElementById('logout-button');
+    const navNotificationsLink = document.getElementById('nav-notifications-link');
 
     if (menuToggle) {
         menuToggle.addEventListener('click', () => {
-            mainMenu.classList.toggle('show');
-            profileMenu.classList.remove('show');
+            if (mainMenu) mainMenu.classList.toggle('show');
+            if (profileMenu) profileMenu.classList.remove('show');
         });
     }
+
     if (profileMenuToggle) {
         profileMenuToggle.addEventListener('click', () => {
-            profileMenu.classList.toggle('show');
-            mainMenu.classList.remove('show');
+            if (profileMenu) profileMenu.classList.toggle('show');
+            if (mainMenu) mainMenu.classList.remove('show');
         });
     }
+
+    // 헤더 바깥 클릭 시 메뉴 닫기
+    document.addEventListener('click', (e) => {
+        const header = document.querySelector('header');
+        if (header && !header.contains(e.target)) {
+            if (mainMenu) mainMenu.classList.remove('show');
+            if (profileMenu) profileMenu.classList.remove('show');
+        }
+    });
+
+    // 로그아웃
     if (logoutButton) {
         logoutButton.addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.removeItem('accessToken');
+            localStorage.removeItem('hasReadReviews');
+            localStorage.removeItem('hasReadSchedules');
             window.location.href = '/login';
         });
     }
 
-    // --- (★페이지별★) 로직 실행 ---
-    document.addEventListener('DOMContentLoaded', async () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const stadiumId = urlParams.get('id');
+    // 알림 이동
+    if (navNotificationsLink) {
+        navNotificationsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.setItem('hasReadReviews', 'true');
+            localStorage.setItem('hasReadSchedules', 'true');
+            window.location.href = '/notifications';
+        });
+    }
 
-        if (!stadiumId) {
-            document.getElementById('stadium-name').textContent = "오류: 구장 ID가 필요합니다.";
+    // 알림 배지 (필요하면 사용)
+    function updateGlobalBadge() {
+        const hasNew = localStorage.getItem('hasNewNotification') === 'true';
+        const badge = document.getElementById('notification-badge');
+        if (badge) badge.style.display = hasNew ? 'block' : 'none';
+    }
+    updateGlobalBadge();
+
+    // --- 리뷰 페이지네이션 ---
+    const REVIEWS_PER_PAGE = 10;
+    let currentPage = 1;
+    let MOCK_ALL_REVIEWS = [];
+
+    function generateMockReviews() {
+        const reviews = [];
+        const names = ["캡틴손", "풋살매니아", "새 리뷰어", "축구사랑", "달리기왕", "키퍼짱", "스트라이커K"];
+        const contents = [
+            "구장 상태가 매우 깨끗하고 잔디 컨디션이 최고입니다.",
+            "샤워 시설이 잘 되어 있어서 퇴근 후 바로 경기하기 좋습니다. 조명도 밝아서 야간 경기하기 좋아요.",
+            "초보자에게 적합한 레벨의 매칭이 많아서 부담 없이 즐길 수 있었습니다! 위치도 좋습니다.",
+            "주차 공간이 조금 좁은 것이 흠이지만, 가성비가 좋아요.",
+            "관리자분이 친절하셔서 기분 좋게 운동했습니다.",
+            "다음에도 꼭 이용하고 싶은 구장입니다. 추천!",
+            "잔디가 약간 딱딱한 감이 있지만, 전체적으로 만족합니다."
+        ];
+
+        for (let i = 1; i <= 12; i++) {
+            reviews.push({
+                id: i,
+                user: names[i % names.length],
+                date: `2025-10-${String(10 + i).padStart(2, '0')}`,
+                content: contents[i % contents.length] + ` (Review #${i})`,
+                rating: (i % 5) + 1
+            });
+        }
+        return reviews;
+    }
+
+    function renderReviews(page) {
+        currentPage = page;
+        const listContainer = document.getElementById('review-list');
+        const totalReviews = MOCK_ALL_REVIEWS.length;
+        const CURRENT_USER_NICKNAME = "새 리뷰어";
+
+        const startIndex = (page - 1) * REVIEWS_PER_PAGE;
+        const endIndex = startIndex + REVIEWS_PER_PAGE;
+        const reviewsToDisplay = MOCK_ALL_REVIEWS.slice(startIndex, endIndex);
+
+        listContainer.innerHTML = '';
+
+        if (totalReviews === 0) {
+            listContainer.innerHTML = '<p style="text-align: center; color: #999; padding: 50px;">등록된 리뷰가 없습니다.</p>';
+            document.getElementById('review-count').textContent = 0;
+            document.getElementById('pagination-controls').style.display = 'none';
             return;
         }
 
-        // ⭐ 인증 확인 (비회원 차단)
-        const accessToken = localStorage.getItem('accessToken');
-        if (!accessToken) {
-            // 이 페이지는 비회원도 볼 수 있게 하거나, 로그인 페이지로 리다이렉트 처리 필요
-            console.warn("비회원 접근: 상세 정보를 제한적으로 표시합니다.");
+        reviewsToDisplay.forEach(review => {
+            const item = document.createElement('div');
+            item.className = 'review-item';
+
+            const isMyReview = review.user === CURRENT_USER_NICKNAME;
+            let actionButtonsHtml = '';
+
+            if (isMyReview) {
+                actionButtonsHtml = `
+                    <div class="review-actions">
+                        <button onclick="handleReviewEdit(${review.id})">수정</button>
+                        <button class="delete" onclick="handleReviewDelete(${review.id})">삭제</button>
+                    </div>
+                `;
+            }
+
+            const starRatingHtml = review.rating
+                ? `<span class="star-display">${'★'.repeat(review.rating)}</span>`
+                : '';
+
+            item.innerHTML = `
+                <div class="review-header">
+                    <span class="review-user">${starRatingHtml} ${review.user} ${isMyReview ? '(나)' : ''}</span>
+                    <span class="review-date">${review.date}</span>
+                </div>
+                <p class="review-content">${review.content}</p>
+                ${actionButtonsHtml}
+            `;
+            listContainer.appendChild(item);
+        });
+
+        document.getElementById('review-count').textContent = totalReviews;
+        renderPagination(totalReviews, page);
+    }
+
+    function renderPagination(totalReviews, currentPage) {
+        const totalPages = Math.ceil(totalReviews / REVIEWS_PER_PAGE);
+        const controls = document.getElementById('pagination-controls');
+        const pageNumbersContainer = document.getElementById('page-numbers');
+        const prevButton = document.getElementById('prev-page');
+        const nextButton = document.getElementById('next-page');
+
+        if (totalPages <= 1) {
+            controls.style.display = 'none';
+            return;
+        }
+
+        controls.style.display = 'block';
+        pageNumbersContainer.innerHTML = '';
+
+        const pagesPerGroup = 5;
+        const currentGroup = Math.ceil(currentPage / pagesPerGroup);
+        const startPage = (currentGroup - 1) * pagesPerGroup + 1;
+        const endPage = Math.min(startPage + pagesPerGroup - 1, totalPages);
+
+        for (let i = startPage; i <= endPage; i++) {
+            const pageButton = document.createElement('button');
+            pageButton.textContent = i;
+            pageButton.className = i === currentPage ? 'active' : '';
+            pageButton.onclick = () => renderReviews(i);
+            pageNumbersContainer.appendChild(pageButton);
+        }
+
+        prevButton.disabled = currentPage === 1;
+        nextButton.disabled = currentPage === totalPages;
+
+        prevButton.onclick = () => {
+            if (currentPage > 1) renderReviews(currentPage - 1);
+        };
+        nextButton.onclick = () => {
+            if (currentPage < totalPages) renderReviews(currentPage + 1);
+        };
+    }
+
+    function handleReviewEdit(reviewId) {
+        const reviewIndex = MOCK_ALL_REVIEWS.findIndex(r => r.id === reviewId);
+        if (reviewIndex !== -1) {
+            const currentContent = MOCK_ALL_REVIEWS[reviewIndex].content;
+            const currentRating = MOCK_ALL_REVIEWS[reviewIndex].rating;
+
+            const newContent = prompt(`리뷰 내용을 수정해주세요 (현재 별점: ${currentRating}점):`, currentContent);
+
+            if (newContent !== null && newContent.trim() !== "" && newContent.trim() !== currentContent.trim()) {
+                MOCK_ALL_REVIEWS[reviewIndex].content = newContent.trim() + " (수정됨)";
+
+                const stadiumId = new URLSearchParams(window.location.search).get('id') || '1';
+                let localReviews = JSON.parse(localStorage.getItem(`reviews_${stadiumId}`)) || [];
+
+                const localIndex = localReviews.findIndex(r => r.id === reviewId);
+                if (localIndex !== -1) {
+                    localReviews[localIndex].content = MOCK_ALL_REVIEWS[reviewIndex].content;
+                    localReviews[localIndex].rating = currentRating;
+                }
+                localStorage.setItem(`reviews_${stadiumId}`, JSON.stringify(localReviews));
+
+                renderReviews(currentPage);
+                alert("✅ 리뷰가 수정되었습니다.");
+            } else if (newContent !== null && newContent.trim() !== "") {
+                alert("수정된 내용이 없습니다.");
+            }
+        }
+    }
+
+    function handleReviewDelete(reviewId) {
+        if (confirm("정말로 이 리뷰를 삭제하시겠습니까?")) {
+            MOCK_ALL_REVIEWS = MOCK_ALL_REVIEWS.filter(r => r.id !== reviewId);
+
+            const stadiumId = new URLSearchParams(window.location.search).get('id') || '1';
+            let localReviews = JSON.parse(localStorage.getItem(`reviews_${stadiumId}`)) || [];
+            localReviews = localReviews.filter(r => r.id !== reviewId);
+            localStorage.setItem(`reviews_${stadiumId}`, JSON.stringify(localReviews));
+
+            renderReviews(1);
+            alert("✅ 리뷰가 삭제되었습니다.");
+        }
+    }
+
+    window.handleReviewEdit = handleReviewEdit;
+    window.handleReviewDelete = handleReviewDelete;
+
+    // ✅ 경기 모달 열기/닫기
+    function openMatchModal(isOpen) {
+        const modal = document.getElementById('match-create-modal');
+        if (!modal) return;
+        if (isOpen) {
+            modal.classList.add('show');
         } else {
+            modal.classList.remove('show');
+        }
+    }
+
+    // ✅ 로컬스토리지에서 전체 경기 가져오기
+    function getLocalMatches() {
+        try {
+            return JSON.parse(localStorage.getItem('match_schedules')) || [];
+        } catch (e) {
+            console.error("match_schedules 파싱 오류:", e);
+            localStorage.removeItem('match_schedules');
+            return [];
+        }
+    }
+
+    // ✅ 특정 구장 + 날짜에 대한 경기 목록 렌더링
+    function renderMatchList(stadiumId, dateStr) {
+        const listEl = document.getElementById('match-list');
+        if (!listEl) return;
+
+        listEl.innerHTML = '';
+
+        if (!dateStr) {
+            listEl.innerHTML = `<p style="color:#777; font-size:13px; padding:10px 0;">
+                날짜를 선택하면, 이 구장에서 진행 예정인 경기가 표시됩니다.
+            </p>`;
+            return;
+        }
+
+        const all = getLocalMatches();
+        const filtered = all
+            .filter(m => String(m.stadiumId) === String(stadiumId) && m.date === dateStr)
+            .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+        if (filtered.length === 0) {
+            listEl.innerHTML = `<p style="color:#777; font-size:13px; padding:10px 0;">
+                선택한 날짜에 등록된 경기가 없습니다.
+            </p>`;
+            return;
+        }
+
+        filtered.forEach(match => {
+            const item = document.createElement('div');
+            item.className = 'match-item';
+            item.innerHTML = `
+                <div class="match-item-time">${match.startTime} ~ ${match.endTime}</div>
+                <div class="match-item-meta">
+                    주최자: ${match.creator || '알 수 없음'} · 인원 ${match.current || 1}/${match.max || 10}
+                </div>
+            `;
+            item.addEventListener('click', () => {
+                window.location.href = '/schedule/detail/' + match.id;
+            });
+            listEl.appendChild(item);
+        });
+    }
+
+    // ✅ 경기 생성 제출 로직
+    function submitMatchForm() {
+        const stadiumId = new URLSearchParams(window.location.search).get('id') || '1';
+        const stadiumNameInput = document.getElementById('stadiumName');
+        const hostNameInput = document.getElementById('hostName');
+        const matchDateInput = document.getElementById('matchDate');
+        const startTimeSelect = document.getElementById('startTime');
+        const endTimeSelect = document.getElementById('endTime');
+
+        const matchDate = matchDateInput.value;
+        const startTime = startTimeSelect.value;
+        const endTime = endTimeSelect.value;
+
+        if (!stadiumId || stadiumNameInput.value.includes("정보 없음")) {
+            alert("❌ 경기 개설을 위해서는 유효한 구장을 먼저 선택해야 합니다.");
+            return;
+        }
+        if (!matchDate) {
+            alert("❌ 경기 날짜를 선택해 주세요.");
+            return;
+        }
+        if (startTime >= endTime) {
+            alert("❌ 시작 시간은 종료 시간보다 빨라야 합니다.");
+            return;
+        }
+
+        const startDateTimeStr = `${matchDate}T${startTime}`;
+        const currentDateTimeStr = new Date().toISOString().slice(0, 16);
+        if (startDateTimeStr < currentDateTimeStr) {
+            alert("❌ 이미 지난 날짜나 시간으로는 경기를 개설할 수 없습니다.");
+            return;
+        }
+
+        const NEW_MATCH_ID = Date.now();
+        const newMatchData = {
+            id: NEW_MATCH_ID,
+            stadiumId: stadiumId,
+            date: matchDate,
+            startTime: startTime,
+            endTime: endTime,
+            location: stadiumNameInput.value,
+            creator: hostNameInput.value,
+            current: 1,
+            max: 10,
+            status: "open",
+            type: "팀 매칭"
+        };
+
+        let localMatchSchedules = getLocalMatches();
+        localMatchSchedules.unshift(newMatchData);
+        localStorage.setItem('match_schedules', JSON.stringify(localMatchSchedules));
+
+        alert(`'${newMatchData.location}' 경기가 성공적으로 개설되었습니다!`);
+        openMatchModal(false);
+
+        const matchDateFilterInput = document.getElementById('match-date-filter');
+        if (matchDateFilterInput) {
+            if (!matchDateFilterInput.value) {
+                matchDateFilterInput.value = matchDate;
+            }
+            renderMatchList(stadiumId, matchDateFilterInput.value);
+        }
+    }
+
+    // DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const stadiumId = urlParams.get('id') || '1';
+
+        const tabBtnMatch = document.getElementById('tab-btn-match');
+        const tabBtnReview = document.getElementById('tab-btn-review');
+        const tabMatch = document.getElementById('tab-match');
+        const tabReview = document.getElementById('tab-review');
+
+        function activateTab(tabName) {
+            if (tabName === 'match') {
+                tabBtnMatch.classList.add('active');
+                tabBtnReview.classList.remove('active');
+                tabMatch.classList.add('active');
+                tabReview.classList.remove('active');
+            } else {
+                tabBtnMatch.classList.remove('active');
+                tabBtnReview.classList.add('active');
+                tabMatch.classList.remove('active');
+                tabReview.classList.add('active');
+            }
+        }
+
+        if (tabBtnMatch && tabBtnReview) {
+            tabBtnMatch.addEventListener('click', () => activateTab('match'));
+            tabBtnReview.addEventListener('click', () => activateTab('review'));
+        }
+        activateTab('match');
+
+        const DUMMY_DATA = {
+            name: "강남 풋살 아레나",
+            address: "서울 강남구 테헤란로 123",
+            contact: "02-1234-5678",
+            fee: "50,000원/시간",
+            size: "5 vs 5"
+        };
+
+        document.getElementById('stadium-name').textContent = `${DUMMY_DATA.name} (ID: ${stadiumId})`;
+        document.getElementById('stadium-address').textContent = DUMMY_DATA.address;
+        document.getElementById('stadium-contact').textContent = DUMMY_DATA.contact;
+        document.getElementById('stadium-fee').textContent = DUMMY_DATA.fee;
+        document.getElementById('stadium-size').textContent = DUMMY_DATA.size;
+
+
+        let baseReviews = generateMockReviews();
+        const localReviews = JSON.parse(localStorage.getItem(`reviews_${stadiumId}`)) || [];
+        const allReviews = [...localReviews, ...baseReviews];
+        const uniqueReviews = allReviews.reduce((acc, review) => {
+            if (!acc.some(r => r.id === review.id)) {
+                acc.push(review);
+            }
+            return acc;
+        }, []);
+        MOCK_ALL_REVIEWS = uniqueReviews;
+        renderReviews(currentPage);
+
+        document.getElementById('btn-schedule').href = `/schedule?stadiumId=${stadiumId}`;
+        document.getElementById('btn-create-match').href = `/match/create?stadiumId=${stadiumId}`;
+
+        const accessToken = localStorage.getItem('accessToken');
+        if (accessToken) {
             document.getElementById('profile-menu-toggle').style.display = 'block';
         }
 
+        const btnCreateMatch = document.getElementById('btn-create-match');
+        const DEFAULT_USER = "로그인 사용자";
+        const hostNameInput = document.getElementById('hostName');
+        const stadiumNameInput = document.getElementById('stadiumName');
+        const hiddenStadiumIdInput = document.getElementById('stadiumId');
+        const matchDateInput = document.getElementById('matchDate');
+        const startTimeSelect = document.getElementById('startTime');
+        const endTimeSelect = document.getElementById('endTime');
 
-        // ⭐ 더미 데이터 로드 (실제로는 백엔드 API 호출)
-        const MOCK_DATA = {
-            '1': {
-                name: "강남 풋살 아레나",
-                address: "서울 강남구 테헤란로 123",
-                contact: "02-1234-5678",
-                fee: "50,000원/시간",
-                size: "6 vs 6",
-                etcInfo: ["샤워실 완비", "넉넉한 주차장", "대기실 제공", "음료 자판기"]
-            },
-            '2': {
-                name: "수원 월드컵 구장",
-                address: "경기 수원시 팔달구 100",
-                contact: "031-9876-5432",
-                fee: "45,000원/시간",
-                size: "5 vs 5",
-                etcInfo: ["샤워실", "대기실"]
-            },
-            '3': {
-                name: "인천 문학 미니구장",
-                address: "인천 연수구 동춘동 50",
-                contact: "032-1111-2222",
-                fee: "40,000원/시간",
-                size: "5 vs 5",
-                etcInfo: ["주차장"]
+        function populateTimeSelects() {
+            startTimeSelect.innerHTML = '';
+            endTimeSelect.innerHTML = '';
+
+            for (let i = 0; i <= 23; i++) {
+                const timeStr = String(i).padStart(2, '0') + ':00';
+                startTimeSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
             }
-        };
+            for (let i = 1; i <= 24; i++) {
+                const timeStr = String(i).padStart(2, '0') + ':00';
+                endTimeSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
+            }
 
-        const data = MOCK_DATA[stadiumId] || MOCK_DATA['1'];
+            startTimeSelect.value = "19:00";
+            endTimeSelect.value = "20:00";
+        }
 
-        // DOM 업데이트
-        document.getElementById('stadium-name').textContent = data.name;
-        document.getElementById('stadium-address').textContent = data.address;
-        document.getElementById('stadium-contact').textContent = data.contact;
-        document.getElementById('stadium-fee').textContent = data.fee;
-        document.getElementById('stadium-size').textContent = data.size;
+        function setupDateFieldForModal() {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const todayDateStr = `${yyyy}-${mm}-${dd}`;
+            matchDateInput.value = todayDateStr;
+            matchDateInput.min = todayDateStr;
+        }
 
-        // 편의 시설 렌더링 (ERD: etc_info 반영)
-        const amenitiesContainer = document.getElementById('stadium-amenities');
-        amenitiesContainer.innerHTML = data.etcInfo.map(item =>
-            `<span class="amenity-tag">${item}</span>`
-        ).join('');
+        function initMatchModalFields() {
+            hostNameInput.value = DEFAULT_USER;
 
-        // 액션 버튼 링크 ID 업데이트
-        document.getElementById('btn-schedule').href = `/schedule?stadiumId=${stadiumId}`;
-        document.getElementById('btn-review').href = `/community?category=review&stadiumId=${stadiumId}`;
+            const fullNameText = document.getElementById('stadium-name').textContent;
+            const pureName = fullNameText.split('(ID')[0].trim();
+            stadiumNameInput.value = pureName || "구장 정보 없음";
+            hiddenStadiumIdInput.value = stadiumId;
+
+            populateTimeSelects();
+            setupDateFieldForModal();
+        }
+
+        if (btnCreateMatch) {
+            btnCreateMatch.addEventListener('click', (e) => {
+                e.preventDefault();
+
+                const accessToken = localStorage.getItem('accessToken');
+                if (!accessToken) {
+                    alert("❌ 회원 전용 기능입니다.\n로그인 후 이용해 주세요.");
+                    window.location.href = '/login';
+                    return;
+                }
+
+                initMatchModalFields();
+                openMatchModal(true);
+            });
+        }
+
+        const matchDateFilterInput = document.getElementById('match-date-filter');
+        if (matchDateFilterInput) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const todayDateStr = `${yyyy}-${mm}-${dd}`;
+
+            matchDateFilterInput.value = todayDateStr;
+            matchDateFilterInput.min = todayDateStr;
+
+            renderMatchList(stadiumId, todayDateStr);
+
+            matchDateFilterInput.addEventListener('change', () => {
+                renderMatchList(stadiumId, matchDateFilterInput.value);
+            });
+        }
+
+        const matchModal = document.getElementById('match-create-modal');
+        if (matchModal) {
+            matchModal.addEventListener('click', (e) => {
+                if (e.target === matchModal) {
+                    openMatchModal(false);
+                }
+            });
+        }
     });
 </script>
+
+</body>
+</html>

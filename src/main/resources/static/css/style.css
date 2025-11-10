@@ -21,6 +21,7 @@ body, html {
     background-size: cover;
     background-position: center;
     background-color: #f7f7f7;
+
 }
 
 /* ⭐⭐ 퀵 메뉴 헤더 ⭐⭐ */
@@ -222,27 +223,39 @@ body, html {
 }
 
 .main-wrapper {
+
     display: flex;
-    width: 1000px;
+    width: 700px;
     height: auto;
     min-height: 650px;
     max-width: 90%;
-    background: #ffffff;
     border-radius: 20px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
-    margin: 30px 0;
+    margin: auto auto; /* 중앙 정렬용 가로 auto */
 }
 .login-section {
     flex: 1;
-    padding: 50px 70px;
+    padding: 50px 50px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    background: #ffffff;
+    /* 🔹 흰색 50% 투명 */
+    background: rgba(255, 255, 255, 0.3);
     position: relative;
     overflow-y: auto;
-    padding-right: 50px;
 }
+
+.main-section {
+    flex: 1;
+    padding: 50px 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    background: rgba(255, 255, 255);
+    position: relative;
+    overflow-y: auto;
+}
+
 .title-login {
     font-size: 38px;
     font-weight: 700;
@@ -328,7 +341,7 @@ body, html {
     margin-bottom: 20px;
 }
 .forgot-password {
-    color: #e74c3c;
+    color: #a50f00;
     text-decoration: none;
 }
 .remember-me {
@@ -397,18 +410,7 @@ body, html {
 .social-btn.facebook { color: #4267B2; }
 .social-btn.youtube { color: #FF0000; }
 .background-image-section {
-    flex: 1;
-    background-image: url('futsal_player_right.jpg');
-    background-size: cover;
-    background-position: center;
     position: relative;
-    overflow: hidden;
-    background-color: #f7f7f7;
-    clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
 }
 .background-image-section::before {
     content: "";
@@ -494,8 +496,6 @@ body, html {
 }
 .info-message {
     color: green;
-    background-color: #e6ffed;
-    padding: 10px;
     border-radius: 5px;
     font-size: 14px;
     margin-bottom: 15px;
@@ -1343,6 +1343,13 @@ body, html {
 .friend-request-button:hover {
     background: #e0e0e0;
 }
+
+.search-content {
+    display: flex;
+    gap: 20px;
+}
+
+
 
 /* chat.html style block 내부에 있던 인라인 프로필 상세 정보 스타일 (재정의 방지) */
 .inline-profile-detail {
