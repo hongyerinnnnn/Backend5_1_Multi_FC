@@ -3,72 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FUTSAL MATCH - 경기 후기 작성</title>
+    <title>MULTI FC - 경기 후기 작성</title>
 
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-    <style>
-        .star-rating {
-            display: flex;
-            flex-direction: row-reverse; /* 별이 오른쪽부터 채워지도록 */
-            justify-content: flex-end; /* 오른쪽 정렬 */
-            font-size: 2rem;
-            margin-bottom: 15px;
-        }
-        .star-rating label {
-            color: #ccc;
-            cursor: pointer;
-            padding: 0 3px;
-            transition: color 0.2s;
-        }
-        .star-rating input[type="radio"] {
-            display: none;
-        }
-        .star-rating input[type="radio"]:checked ~ label,
-        .star-rating label:hover,
-        .star-rating label:hover ~ label {
-            color: #f5c518; /* (노란색) */
-        }
-
-        /* ⭐⭐⭐ 추가: 팀원 매너 평가 섹션 스타일 ⭐⭐⭐ */
-        .member-rating-list {
-            margin-top: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            background: #fcfcfc;
-        }
-        .member-rating-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px dashed #eee;
-        }
-        .member-rating-item:last-child {
-            border-bottom: none;
-        }
-        .member-rating-item label {
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 0;
-            flex-shrink: 0;
-            margin-right: 15px;
-        }
-        .member-rating-item .star-rating {
-            font-size: 1.5rem; /* 개별 평가 별 크기 줄임 */
-            margin-bottom: 0;
-        }
-        /* ⭐⭐⭐ 추가 끝 ⭐⭐⭐ */
-
-    </style>
 </head>
 <body>
 
 <header class="quick-menu">
-    <div class="logo"><a href="/">FUTSAL MATCH</a></div>
+    <div class="logo"><a href="/">MULTI FC</a></div>
     <div class="header-icons">
         <button id="profile-menu-toggle" class="profile-icon" style="position: relative; display: none;"> <i class="fas fa-user-circle"></i>
             <span id="notification-badge" class="notification-badge"></span>
@@ -93,7 +38,6 @@
             <li><a href="/fields"><i class="fas fa-search"></i> 구장검색</a></li>
             <li><a href="/community"><i class="fas fa-users"></i> 커뮤니티</a></li>
             <li><a href="/chat"><i class="fas fa-comments"></i> 실시간채팅</a></li>
-            <li><a href="/schedule"><i class="fas fa-calendar-alt"></i> 일정</a></li>
         </ul>
     </nav>
 </header>
@@ -101,10 +45,10 @@
     <div class="main-wrapper">
         <div class="login-section">
             <div class="login-container">
+
                 <h1 class="title-login">경기 후기 작성</h1>
-                <p style="margin-bottom: 25px; font-size: 15px; color: #555;">
-                    경기는 어떠셨나요? ⚽<br>
-                    팀원들에게 소중한 매너 평가를 남겨주세요.
+                <p style="margin-bottom: 25px; font-size: 15px; color: #555; line-height: 1.5;">
+                    경기는 어떠셨나요? ⚽ 경기 소감과 구장 피드백을 자유롭게 남겨주세요.
                 </p>
 
                 <p id="review-success-message" class="info-message" style="display:none;"></p>
@@ -114,53 +58,19 @@
                     <div class="input-group">
                         <label>후기 작성 대상 경기</label>
                         <input type="text" id="match-info" value="2025-10-30 (목) 19:00 - 서울 강남 풋살장" disabled
-                               style="background: #eee; cursor: not-allowed;">
+                               style="background: #eee; cursor: not-allowed; width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 15px; ">
                         <input type="hidden" id="match-id" name="matchId" value="12345">
                     </div>
 
-                    <h3 style="font-size: 18px; color: #2c3e50; margin-top: 30px; margin-bottom: 10px;">
-                        참여 팀원 매너 평가 (필수)
-                    </h3>
-                    <p style="font-size: 14px; color: #777; margin-bottom: 15px;">함께 뛴 선수들의 매너를 별점으로 평가해 주세요.</p>
-
-                    <div class="member-rating-list" id="member-rating-list">
-                        <div class="member-rating-item">
-                            <label>캡틴손</label>
-                            <input type="hidden" name="ratings[0].ratedUserId" value="captain_son">
-                            <div class="star-rating">
-                                <input type="radio" id="s1-5-stars" name="ratings[0].rating" value="5" required><label for="s1-5-stars">★</label>
-                                <input type="radio" id="s1-4-stars" name="ratings[0].rating" value="4"><label for="s1-4-stars">★</label>
-                                <input type="radio" id="s1-3-stars" name="ratings[0].rating" value="3"><label for="s1-3-stars">★</label>
-                                <input type="radio" id="s1-2-stars" name="ratings[0].rating" value="2"><label for="s1-2-stars">★</label>
-                                <input type="radio" id="s1-1-star" name="ratings[0].rating" value="1"><label for="s1-1-star">★</label>
-                            </div>
-                        </div>
-                        <div class="member-rating-item">
-                            <label>구원투수</label>
-                            <input type="hidden" name="ratings[1].ratedUserId" value="closer_kim">
-                            <div class="star-rating">
-                                <input type="radio" id="s2-5-stars" name="ratings[1].rating" value="5" required><label for="s2-5-stars">★</label>
-                                <input type="radio" id="s2-4-stars" name="ratings[1].rating" value="4"><label for="s2-4-stars">★</label>
-                                <input type="radio" id="s2-3-stars" name="ratings[1].rating" value="3"><label for="s2-3-stars">★</label>
-                                <input type="radio" id="s2-2-stars" name="ratings[1].rating" value="2"><label for="s2-2-stars">★</label>
-                                <input type="radio" id="s2-1-star" name="ratings[1].rating" value="1"><label for="s2-1-star">★</label>
-                            </div>
-                        </div>
-
-                    </div>
-                    <h3 style="font-size: 18px; color: #2c3e50; margin-top: 30px; margin-bottom: 10px;">
-                        경기 한줄평
-                    </h3>
-
-                    <div class="input-group">
-                        <label for="review-content">경기 한줄평</label>
+                    <div class="input-group" style="margin-top: 30px;">
+                        <label for="review-content">경기 한줄평을 작성해 주세요.</label>
                         <textarea id="review-content" name="content" rows="5"
                                   placeholder="경기 소감이나 구장 피드백 등을 남겨주세요."
                                   required
                                   style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 15px; background: #f7f7f7; font-family: inherit; resize: vertical;"></textarea>
                     </div>
 
-                    <button type="submit" class="login-button" style="margin-top: 15px;">후기 등록 및 매너 점수 제출</button>
+                    <button type="submit" class="login-button" style="margin-top: 25px;">후기 등록</button>
                 </form>
             </div>
         </div>
@@ -241,12 +151,9 @@
             alert("로그인이 필요한 페이지입니다. 로그인 페이지로 이동합니다.");
             window.location.href = '/login';
         }
-
-        // ⭐ 실제로는 URL에서 matchId를 가져와 서버에서 참가자 명단을 로드해야 합니다.
-        // loadMatchParticipants(document.getElementById('match-id').value);
     });
 
-    // --- (★페이지별★) 후기 등록 로직 (매너 점수 제출 포함) ---
+    // --- (★페이지별★) 후기 등록 로직 ---
     const reviewForm = document.getElementById('review-form');
     const successMsg = document.getElementById('review-success-message');
     const errorMsg = document.getElementById('review-error-message');
@@ -256,23 +163,6 @@
         successMsg.style.display = 'none';
         errorMsg.style.display = 'none';
 
-        // 1. 팀원 평가 필드가 모두 체크되었는지 확인하는 로직 (필수)
-        const ratingContainers = document.querySelectorAll('.member-rating-item');
-        let allRated = true;
-
-        ratingContainers.forEach(container => {
-            const radioName = container.querySelector('input[type="radio"]').name;
-            if (!reviewForm.querySelector(`input[name="${radioName}"]:checked`)) {
-                allRated = false;
-            }
-        });
-
-        if (!allRated) {
-            errorMsg.textContent = '❌ 모든 팀원에 대한 매너 평가 별점을 제출해야 합니다.';
-            errorMsg.style.display = 'block';
-            return;
-        }
-
         const content = document.getElementById('review-content').value.trim();
         if (content === '') {
             errorMsg.textContent = '❌ 경기 한줄평 내용을 작성해주세요.';
@@ -280,7 +170,9 @@
             return;
         }
 
-        const formData = new FormData(reviewForm);
+        const formData = new FormData();
+        formData.append('matchId', document.getElementById('match-id').value);
+        formData.append('content', content);
 
         try {
             // ⭐ 실제로는 fetch('/reviews/submit', { method: 'POST', body: formData }) 호출 ⭐
@@ -289,7 +181,7 @@
             // 후기 작성 성공 처리
             localStorage.setItem('hasReadReviews', 'true');
 
-            successMsg.textContent = '✅ 매너 평가 및 후기가 성공적으로 등록되었습니다. 메인 페이지로 이동합니다.';
+            successMsg.textContent = '✅ 후기가 성공적으로 등록되었습니다. 메인 페이지로 이동합니다.';
             successMsg.style.display = 'block';
 
             setTimeout(() => {

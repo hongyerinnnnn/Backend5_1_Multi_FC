@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FUTSAL MATCH - 회원가입</title>
+    <title>MULTI FC - 회원가입</title>
 
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
             font-size: 14px;
             font-weight: 600;
             color: #fff;
-            background: #95a5a6; /* 회색 버튼 */
+            background: #95a5a6;
             border: none;
             border-radius: 10px;
             cursor: pointer;
@@ -36,12 +36,11 @@
             background: #7f8c8d;
         }
     </style>
-
 </head>
-<body>
 
+<body>
 <header class="quick-menu">
-    <div class="logo"><a href="/">FUTSAL MATCH</a></div>
+    <div class="logo"><a href="/">MULTI FC</a></div>
     <div class="header-icons">
         <button id="menu-toggle" class="menu-toggle-btn"><i class="fas fa-bars"></i></button>
     </div>
@@ -49,11 +48,11 @@
 
 <main class="login-page-main">
     <div class="main-wrapper">
-        <div class="login-section">
+        <div class="main-section">
             <div class="login-container">
                 <h1 class="title-login">Sign Up</h1>
                 <p style="margin-bottom: 25px; font-size: 15px; color: #555;">
-                    FUTSAL MATCH 계정을 만들고 매치를 시작하세요.
+                    MULTI FC 계정을 만들고 매치를 시작하세요.
                 </p>
 
                 <p id="error-message" class="error-message" style="display:none;"></p>
@@ -61,32 +60,22 @@
                 <form id="register-form" enctype="multipart/form-data">
 
                     <div class="input-group">
-                        <label for="name">이름 (Full Name)</label>
-                        <input type="text" id="name" name="name" placeholder="실명을 입력해주세요" required>
+                        <label for="email">이메일 (Email)</label>
+                        <input type="email" id="email" name="email" placeholder="비밀번호 찾기 등에 사용" required>
+                        <p id="email-message" class="info-message" style="display:none;"></p>
                     </div>
 
                     <div class="input-group">
-                        <label for="email">이메일 (Email)</label>
-                        <input type="email" id="email" name="email" placeholder="비밀번호 찾기 등에 사용" required>
+                        <label for="username">아이디 (User name)</label>
+                        <input type="text" id="username" name="username" placeholder="사용할 아이디" required>
+                        <p id="username-message" class="info-message" style="display:none;"></p>
                     </div>
 
-                    <div class="input-group with-button">
-                        <div class="input-wrapper">
-                            <label for="username">아이디 (User name)</label>
-                            <input type="text" id="username" name="username" placeholder="사용할 아이디" required>
-                        </div>
-                        <button type="button" id="check-username-btn" class="check-duplicate-btn">중복 확인</button>
+                    <div class="input-group">
+                        <label for="nickname">닉네임</label>
+                        <input type="text" id="nickname" name="nickname" placeholder="사용할 닉네임" required>
+                        <p id="nickname-message" class="info-message" style="display:none;"></p>
                     </div>
-                    <p id="username-message" class="info-message" style="display:none;"></p>
-
-                    <div class="input-group with-button">
-                        <div class="input-wrapper">
-                            <label for="nickname">닉네임</label>
-                            <input type="text" id="nickname" name="nickname" placeholder="사용할 닉네임" required>
-                        </div>
-                        <button type="button" id="check-nickname-btn" class="check-duplicate-btn">중복 확인</button>
-                    </div>
-                    <p id="nickname-message" class="info-message" style="display:none;"></p>
 
                     <div class="input-group">
                         <label for="password">비밀번호</label>
@@ -104,6 +93,23 @@
                         </div>
                     </div>
 
+
+                    <div class="input-group" style="display: flex; align-items: center; gap: 20px; margin-top: 5px;">
+                        <label style="margin: 0; min-width: 100px; font-weight: 700; font-size: 20px;">
+                            성별 (Gender)
+                        </label>
+                        <div style="display: flex; align-items: center; gap: 35px;  margin-top: 7px;">
+                            <label style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 15px;">
+                                <input type="radio" name="gender" value="M" required style="accent-color: #6c5ce7; width: 18px; height: 18px;">
+                                남성 (M)
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 15px;">
+                                <input type="radio" name="gender" value="F" required style="accent-color: #e74c3c; width: 18px; height: 18px;">
+                                여성 (F)
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="input-group">
                         <label for="position">선호 포지션</label>
                         <select id="position" name="position" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 15px; background: #f7f7f7;">
@@ -115,17 +121,6 @@
                         </select>
                     </div>
 
-                    <div class="input-group">
-                        <label>성별 (Gender)</label>
-                        <div style="display: flex; gap: 20px; margin-top: 5px;">
-                            <label>
-                                <input type="radio" name="gender" value="M" required style="accent-color: #6c5ce7;"> 남성 (M)
-                            </label>
-                            <label>
-                                <input type="radio" name="gender" value="F" required style="accent-color: #e74c3c;"> 여성 (F)
-                            </label>
-                        </div>
-                    </div>
 
                     <div class="input-group">
                         <label for="skill-level">나의 실력 레벨</label>
@@ -167,79 +162,12 @@
                 </div>
             </div>
         </div>
-        <div class="background-image-section"></div>
+
     </div>
 </main>
 
 <script>
-    // --- 공통 메뉴/로그아웃 로직 (생략) ---
-    const menuToggle = document.getElementById('menu-toggle');
-    const mainMenu = document.getElementById('main-menu');
-    const profileMenuToggle = document.getElementById('profile-menu-toggle');
-    const profileMenu = document.getElementById('profile-menu');
-    const logoutButton = document.getElementById('logout-button');
-    const navNotificationsLink = document.getElementById('nav-notifications-link');
-    const navLoginLink = document.getElementById('nav-login-link');
-    const navLogoutLink = document.getElementById('nav-logout-link');
-
-    if (menuToggle) {
-        menuToggle.addEventListener('click', () => {
-            mainMenu.classList.toggle('show');
-            if (profileMenu) profileMenu.classList.remove('show');
-        });
-    }
-
-    if (profileMenuToggle) {
-        profileMenuToggle.addEventListener('click', () => {
-            profileMenu.classList.toggle('show');
-            if (mainMenu) mainMenu.classList.remove('show');
-        });
-    }
-
-    document.addEventListener('click', (event) => {
-        const isClickInsideHeader = document.querySelector('header').contains(event.target);
-        if (!isClickInsideHeader) {
-            mainMenu.classList.remove('show');
-            if (profileMenu) profileMenu.classList.remove('show');
-        }
-    });
-
-    if (logoutButton) {
-        logoutButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.removeItem('accessToken');
-            window.location.href = '/login';
-        });
-    }
-
-    if (navLogoutLink) {
-        navLogoutLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.removeItem('accessToken');
-            window.location.href = '/login';
-        });
-    }
-
-    if (navNotificationsLink) {
-        navNotificationsLink.addEventListener('click', (e) => {
-            localStorage.setItem('hasReadReviews', 'true');
-            localStorage.setItem('hasReadSchedules', 'true');
-            window.location.href = '/notifications';
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const accessToken = localStorage.getItem('accessToken');
-        if (accessToken) {
-            window.location.href = '/';
-        } else {
-            if (profileMenuToggle) profileMenuToggle.style.display = 'none';
-            if (navLoginLink) navLoginLink.parentElement.style.display = 'list-item';
-            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'none';
-        }
-    });
-
-    // --- ⭐⭐ 비밀번호 보기 토글 (수정) ⭐⭐ ---
+    // --- 비밀번호 보기 토글 ---
     document.querySelectorAll('.toggle-password').forEach(icon => {
         icon.addEventListener('click', function() {
             const input = this.parentElement.querySelector('input');
@@ -249,199 +177,206 @@
             this.classList.toggle('fa-eye-slash');
         });
     });
-    // --- ⭐⭐ 주소 찾기 함수 (더미) ⭐⭐ ---
+
+    // --- 주소 찾기 (더미) ---
     function searchAddress() {
         alert("주소 검색 API를 통해 주소를 찾습니다. (예: Daum Postcode)");
-        // 더미로 주소 입력
         document.getElementById('address').value = "서울특별시 강남구 테헤란로 123";
     }
 
-    // --- 회원가입 로직 (유지 및 정리) ---
-    const registerForm = document.getElementById('register-form');
-    const passwordInput = document.getElementById('password');
-    const confirmPasswordInput = document.getElementById('confirm-password');
-    const termsCheckbox = document.getElementById('terms-agree');
-    const errorMsg = document.getElementById('error-message');
-    const registerSubmitBtn = document.getElementById('register-submit-btn');
-    const usernameInput = document.getElementById('username');
-    const nicknameInput = document.getElementById('nickname');
-    const checkUsernameBtn = document.getElementById('check-username-btn');
-    const checkNicknameBtn = document.getElementById('check-nickname-btn');
-    const usernameMsg = document.getElementById('username-message');
-    const nicknameMsg = document.getElementById('nickname-message');
+    // --- 회원가입 로직 ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const registerForm = document.getElementById('register-form');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirm-password');
+        const errorMsg = document.getElementById('error-message');
+        const registerSubmitBtn = document.getElementById('register-submit-btn');
 
-    let isUsernameChecked = false;
-    let isNicknameChecked = false;
+        const emailInput = document.getElementById('email');
+        const emailMsg = document.getElementById('email-message');   // 🔹 id 오타 수정
 
-    function clearMessages() {
-        errorMsg.style.display = 'none';
-        usernameMsg.style.display = 'none';
-        nicknameMsg.style.display = 'none';
-    }
+        const usernameInput = document.getElementById('username');
+        const nicknameInput = document.getElementById('nickname');
 
-    function checkSubmitButtonState() {
-        if (isUsernameChecked && isNicknameChecked) {
-            registerSubmitBtn.disabled = false;
-            registerSubmitBtn.textContent = 'Create Account';
-        } else {
+        const usernameMsg = document.getElementById('username-message');
+        const nicknameMsg = document.getElementById('nickname-message');
+
+        const termsCheckbox = document.getElementById('terms-agree');
+
+        let isEmailValid = true;       // 🔹 이메일 유효 여부
+        let isUsernameValid = false;
+        let isNicknameValid = false;
+
+        function checkSubmitButtonState() {
+            // 이메일까지 모두 유효할 때만 버튼 활성화
+            registerSubmitBtn.disabled = !(isEmailValid && isUsernameValid && isNicknameValid);
+            registerSubmitBtn.textContent = registerSubmitBtn.disabled
+                ? "Create Account (중복 확인 필요)"
+                : "Create Account";
+        }
+
+        // 🔹 필드별 더미 중복 체크 함수
+        async function checkDuplicate(field, value) {
+            await new Promise(r => setTimeout(r, 400)); // 서버 호출 시뮬레이션
+
+            if (field === "email") {
+                // 이메일은 qwer@example.com 과 같을 때만 중복으로 처리
+                return value.trim().toLowerCase() === "qwer@example.com";
+            }
+
+            // 아이디/닉네임은 "QWER" 더미 값으로 중복 처리
+            return value.trim().toUpperCase() === "QWER";
+        }
+
+        function showErrorMessage(element, message) {
+            element.textContent = message;
+            element.style.display = "block";
+            element.style.color = "red";
+            element.style.fontSize = "13px";
+            element.style.marginTop = "5px";
+        }
+
+        function hideMessage(element) {
+            element.style.display = "none";
+        }
+
+        // --- 이메일 자동 중복 확인 ---
+        let emailTimer;
+        emailInput.addEventListener('input', () => {
+            clearTimeout(emailTimer);
+            const value = emailInput.value.trim();
+            hideMessage(emailMsg);
+            isEmailValid = true;
+            checkSubmitButtonState();
+
+            if (!value) return;
+
+            emailTimer = setTimeout(async () => {
+                const isDuplicate = await checkDuplicate("email", value);
+                if (isDuplicate) {
+                    showErrorMessage(emailMsg, "이 이메일은 이미 사용 중입니다. 다른 이메일을 입력해 주세요.");
+                    isEmailValid = false;
+                } else {
+                    hideMessage(emailMsg);
+                    isEmailValid = true;
+                }
+                checkSubmitButtonState();
+            }, 500);
+        });
+
+        // --- 아이디 자동 중복 확인 ---
+        let usernameTimer;
+        usernameInput.addEventListener('input', () => {
+            clearTimeout(usernameTimer);
+            const value = usernameInput.value.trim();
+            hideMessage(usernameMsg);
+            isUsernameValid = false;
+            checkSubmitButtonState();
+
+            if (!value) return;
+
+            usernameTimer = setTimeout(async () => {
+                const isDuplicate = await checkDuplicate("username", value);
+                if (isDuplicate) {
+                    showErrorMessage(usernameMsg, "이 아이디는 이미 있습니다. 다른 아이디를 입력해 주세요.");
+                    isUsernameValid = false;
+                } else {
+                    hideMessage(usernameMsg);
+                    isUsernameValid = true;
+                }
+                checkSubmitButtonState();
+            }, 500);
+        });
+
+        // --- 닉네임 자동 중복 확인 ---
+        let nicknameTimer;
+        nicknameInput.addEventListener('input', () => {
+            clearTimeout(nicknameTimer);
+            const value = nicknameInput.value.trim();
+            hideMessage(nicknameMsg);
+            isNicknameValid = false;
+            checkSubmitButtonState();
+
+            if (!value) return;
+
+            nicknameTimer = setTimeout(async () => {
+                const isDuplicate = await checkDuplicate("nickname", value);
+                if (isDuplicate) {
+                    showErrorMessage(nicknameMsg, "이 닉네임은 이미 있습니다. 다른 닉네임을 입력해 주세요.");
+                    isNicknameValid = false;
+                } else {
+                    hideMessage(nicknameMsg);
+                    isNicknameValid = true;
+                }
+                checkSubmitButtonState();
+            }, 500);
+        });
+
+        // --- 회원가입 제출 ---
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.style.display = 'none';
+
+            if (!isEmailValid || !isUsernameValid || !isNicknameValid) {
+                errorMsg.textContent = '❌ 이메일, 아이디, 닉네임 중복 확인을 완료해주세요.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            if (password !== confirmPassword) {
+                errorMsg.textContent = '❌ 비밀번호가 일치하지 않습니다.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+            if (!passwordPattern.test(password)) {
+                errorMsg.textContent = '❌ 비밀번호는 8자 이상이며, 영문, 숫자, 특수문자를 포함해야 합니다.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            if (!document.getElementById('address').value) {
+                errorMsg.textContent = '❌ 주소를 입력하거나 검색해 주세요.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            const genderChecked = registerForm.querySelector('input[name="gender"]:checked');
+            if (!genderChecked) {
+                errorMsg.textContent = '❌ 성별을 선택해주세요.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            if (!document.getElementById('skill-level').value) {
+                errorMsg.textContent = '❌ 실력 레벨을 선택해 주세요.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            if (!termsCheckbox.checked) {
+                errorMsg.textContent = '❌ 이용약관에 동의해주세요.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            const formData = new FormData(registerForm);
+            registerSubmitBtn.textContent = '처리 중...';
             registerSubmitBtn.disabled = true;
-            let btnText = 'Create Account (';
-            if (!isUsernameChecked) btnText += '아이디 ';
-            if (!isNicknameChecked) btnText += '닉네임 ';
-            btnText += '확인 필요)';
-            registerSubmitBtn.textContent = btnText;
-        }
-    }
 
-    usernameInput.addEventListener('input', () => {
-        isUsernameChecked = false;
-        checkUsernameBtn.disabled = false; // 입력 변경 시 버튼 활성화
-        checkUsernameBtn.classList.remove('success');
+            await new Promise(r => setTimeout(r, 1500));
+
+            registerSubmitBtn.textContent = 'Create Account';
+            alert("회원가입이 성공적으로 완료되었습니다! 로그인 페이지로 이동합니다.");
+            window.location.href = '/login';
+        });
+
         checkSubmitButtonState();
     });
-
-    nicknameInput.addEventListener('input', () => {
-        isNicknameChecked = false;
-        checkNicknameBtn.disabled = false; // 입력 변경 시 버튼 활성화
-        checkNicknameBtn.classList.remove('success');
-        checkSubmitButtonState();
-    });
-
-    function showGeneralError(message) {
-        errorMsg.textContent = message;
-        errorMsg.style.display = 'block';
-    }
-
-    checkUsernameBtn.addEventListener('click', async () => {
-        clearMessages();
-        const username = usernameInput.value.trim();
-        if (!username) {
-            usernameMsg.textContent = '❌ 아이디를 입력해주세요.';
-            usernameMsg.className = 'error-message';
-            usernameMsg.style.display = 'block';
-            return;
-        }
-        // --- 서버 통신 시뮬레이션 ---
-        checkUsernameBtn.disabled = true;
-        checkUsernameBtn.textContent = '확인 중...';
-        await new Promise(r => setTimeout(r, 500));
-        const isDuplicate = (username === 'admin');
-        checkUsernameBtn.textContent = '중복 확인';
-        // --- 시뮬레이션 끝 ---
-
-        if (isDuplicate) {
-            usernameMsg.textContent = '❌ 이미 사용 중인 아이디입니다.';
-            usernameMsg.className = 'error-message';
-            isUsernameChecked = false;
-            checkUsernameBtn.disabled = false;
-        } else {
-            usernameMsg.textContent = `✅ 사용 가능한 아이디 (${username}) 입니다.`;
-            usernameMsg.className = 'info-message';
-            isUsernameChecked = true;
-            checkUsernameBtn.disabled = true; // 확인 후 버튼 비활성화
-            checkUsernameBtn.classList.add('success');
-        }
-        usernameMsg.style.display = 'block';
-        checkSubmitButtonState();
-    });
-
-    checkNicknameBtn.addEventListener('click', async () => {
-        clearMessages();
-        const nickname = nicknameInput.value.trim();
-        if (!nickname) {
-            nicknameMsg.textContent = '❌ 닉네임을 입력해주세요.';
-            nicknameMsg.className = 'error-message';
-            nicknameMsg.style.display = 'block';
-            return;
-        }
-        // --- 서버 통신 시뮬레이션 ---
-        checkNicknameBtn.disabled = true;
-        checkNicknameBtn.textContent = '확인 중...';
-        await new Promise(r => setTimeout(r, 500));
-        const isDuplicate = (nickname === 'futsal');
-        checkNicknameBtn.textContent = '중복 확인';
-        // --- 시뮬레이션 끝 ---
-
-        if (isDuplicate) {
-            nicknameMsg.textContent = '❌ 이미 사용 중인 닉네임입니다.';
-            nicknameMsg.className = 'error-message';
-            isNicknameChecked = false;
-            checkNicknameBtn.disabled = false;
-        } else {
-            nicknameMsg.textContent = `✅ 사용 가능한 닉네임 (${nickname}) 입니다.`;
-            nicknameMsg.className = 'info-message';
-            isNicknameChecked = true;
-            checkNicknameBtn.disabled = true; // 확인 후 버튼 비활성화
-            checkNicknameBtn.classList.add('success');
-        }
-        nicknameMsg.style.display = 'block';
-        checkSubmitButtonState();
-    });
-
-    registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        clearMessages();
-
-        if (!isUsernameChecked || !isNicknameChecked) {
-            showGeneralError('❌ 아이디와 닉네임 중복 확인을 완료해주세요.');
-            return;
-        }
-
-        const password = passwordInput.value;
-        const confirmPassword = confirmPasswordInput.value;
-
-        if (password !== confirmPassword) {
-            showGeneralError('❌ 비밀번호가 일치하지 않습니다.');
-            return;
-        }
-
-        const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
-        if (!passwordPattern.test(password)) {
-            showGeneralError('❌ 비밀번호는 8자 이상이며, 영문, 숫자, 특수문자를 포함해야 합니다.');
-            return;
-        }
-
-        // 주소 필수 확인
-        if (!document.getElementById('address').value) {
-            showGeneralError('❌ 주소를 입력하거나 검색해 주세요.');
-            return;
-        }
-
-        // 성별 필드 검증
-        const genderChecked = registerForm.querySelector('input[name="gender"]:checked');
-        if (!genderChecked) {
-            showGeneralError('❌ 성별을 선택해주세요.');
-            return;
-        }
-
-        // 실력 레벨 검증
-        if (!document.getElementById('skill-level').value) {
-            showGeneralError('❌ 실력 레벨을 선택해 주세요.');
-            return;
-        }
-
-        if (!termsCheckbox.checked) {
-            showGeneralError('❌ 이용약관에 동의해주세요.');
-            return;
-        }
-
-        const formData = new FormData(registerForm);
-
-        // --- 서버 전송 시뮬레이션 (API 호출) ---
-        registerSubmitBtn.textContent = '처리 중...';
-        registerSubmitBtn.disabled = true;
-
-        // 실제로는 fetch('/register', { method: 'POST', body: formData }) 호출
-        await new Promise(r => setTimeout(r, 1500));
-
-        registerSubmitBtn.textContent = 'Create Account';
-        // --- 시뮬레이션 끝 ---
-
-        alert("회원가입이 성공적으로 완료되었습니다! 로그인 페이지로 이동합니다.");
-        window.location.href = '/login';
-    });
-
-    checkSubmitButtonState();
 </script>
 
 </body>
