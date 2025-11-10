@@ -1,8 +1,8 @@
-package com.multi.backend5_1_multi_fc.Notification.service;
+package com.multi.backend5_1_multi_fc.notification.service;
 
 
-import com.multi.backend5_1_multi_fc.Notification.dao.NotificationDao;
-import com.multi.backend5_1_multi_fc.Notification.dto.NotificationDto;
+import com.multi.backend5_1_multi_fc.notification.dao.NotificationDao;
+import com.multi.backend5_1_multi_fc.notification.dto.NotificationDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -16,14 +16,13 @@ public class NotificationService {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     //알림 생성 + DB 저장 + 실시간 전송
-    public void createAndSendNotification(Long userId, String content,String type, String redirectUrl, Long relatedId){
+    public void createAndSendNotification(Long userId, String content, String type, Long referenceId){
         //알림 생성
         NotificationDto notification = NotificationDto.builder()
                 .userId(userId)
                 .content(content)
                 .type(type)
-                .redirectUrl(redirectUrl)
-                .relatedId(relatedId)
+                .referenceId(referenceId) //알람이 발생한 원인이 되는 데이터의 ID (ex: user_id, match_id, chat_room_id 등 등)
                 .isRead(false)
                 .build();
 
@@ -31,10 +30,11 @@ public class NotificationService {
         notificationDao.insert(notification);
 
         //WebSocket 실시간 전송
+        //userId에 해당하는 사용자의 /user/{userId}/queue/notifications로 메세지 전송 <- setUserDestinationPrefix("/user") 설정으로 인해 /user 접두사가 자동으로 붙음
         simpMessagingTemplate.convertAndSendToUser(
-                String.valueOf(userId),
-                "/queue/notifications",
-                notification
+                String.valueOf(userId),             // 대상 사용자 ID
+                "/queue/notifications",             // 구독 경로
+                notification                        // 전송할 데이터
         );
     }
 

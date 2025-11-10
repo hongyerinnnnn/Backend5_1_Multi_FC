@@ -1,7 +1,7 @@
-package com.multi.backend5_1_multi_fc.Notification.dao;
+package com.multi.backend5_1_multi_fc.notification.dao;
 
 
-import com.multi.backend5_1_multi_fc.Notification.dto.NotificationDto;
+import com.multi.backend5_1_multi_fc.notification.dto.NotificationDto;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;

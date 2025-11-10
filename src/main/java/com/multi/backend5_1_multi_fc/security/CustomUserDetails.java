@@ -6,6 +6,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -14,12 +15,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CustomUserDetails implements UserDetails {
 
-    private final Long userId;      //사용자 ID
-    private final String username;  // 로그인한 ID
-    private final String password;  // 비밀번호
-    private final String email;     // 이메일
-    private final String nickname;  // 닉네임
-    private final String role;      // 사용자 권한
+    private final Long userId;                  // 사용자 ID
+    private final String username;              // 로그인한 ID
+    private final String password;              // 비밀번호
+    private final String email;                 // 이메일
+    private final String nickname;              // 닉네임
+    private final String profileImage;          // 프로필 이미지
+    private final String level;                 // 본인 수준
+    private final String position;              // 포지션
+    private final String gender;                // 성별
+    private final Integer loginFailCount;       // 로그인 실패 횟수
+    private final LocalDateTime lockedUntil;    // 로그인 잠금 기간
+    private final String role;                  // 사용자 권한
 
     public Long getUserId() {
         return userId;
@@ -47,6 +54,9 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
+        if(lockedUntil != null){
+            return LocalDateTime.now().isAfter(lockedUntil);
+        }
         return true;
     }
 
