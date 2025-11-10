@@ -289,48 +289,168 @@
 </main>
 
 <script>
-    // ⭐⭐ MOCK_POSTS 더미 게시글 데이터 (대댓글 및 ID 추가) ⭐⭐
+    /* ============================
+       (1) 공통 퀵메뉴 / 로그아웃 로직
+       ============================ */
+    const menuToggle = document.getElementById('menu-toggle');
+    const mainMenu = document.getElementById('main-menu');
+    const profileMenuToggle = document.getElementById('profile-menu-toggle');
+    const profileMenu = document.getElementById('profile-menu');
+    const logoutButton = document.getElementById('logout-button');
+    const navNotificationsLink = document.getElementById('nav-notifications-link');
+
+    const navLoginLink = document.getElementById('nav-login-link');
+    const navLogoutLink = document.getElementById('nav-logout-link');
+    const navChatLinkElement = document.getElementById('nav-chat-link'); // 필요하면 채팅 제한용
+
+    // 햄버거 버튼 → 메인 메뉴 토글
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            if (mainMenu) mainMenu.classList.toggle('show');
+            if (profileMenu) profileMenu.classList.remove('show');
+        });
+    }
+
+    // 프로필 아이콘 → 프로필 메뉴 토글
+    if (profileMenuToggle) {
+        profileMenuToggle.addEventListener('click', () => {
+            if (profileMenu) profileMenu.classList.toggle('show');
+            if (mainMenu) mainMenu.classList.remove('show');
+        });
+    }
+
+    // 헤더 밖 클릭 시 메뉴/프로필 닫기
+    document.addEventListener('click', (event) => {
+        const header = document.querySelector('header');
+        if (!header.contains(event.target)) {
+            if (mainMenu) mainMenu.classList.remove('show');
+            if (profileMenu) profileMenu.classList.remove('show');
+        }
+    });
+
+    // 프로필 메뉴의 로그아웃
+    if (logoutButton) {
+        logoutButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('hasReadReviews');
+            localStorage.removeItem('hasReadSchedules');
+            window.location.href = '/login';
+        });
+    }
+
+    // nav 영역 로그아웃 (있을 때만)
+    if (navLogoutLink) {
+        navLogoutLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('hasReadReviews');
+            localStorage.removeItem('hasReadSchedules');
+            window.location.href = '/login';
+        });
+    }
+
+    // 알림 아이콘 클릭
+    if (navNotificationsLink) {
+        navNotificationsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.setItem('hasReadReviews', 'true');
+            localStorage.setItem('hasReadSchedules', 'true');
+            window.location.href = '/notifications';
+        });
+    }
+
+    // 알림 배지 (필요시 사용)
+    function updateGlobalBadge() {
+        const hasNew = localStorage.getItem('hasNewNotification') === 'true';
+        const badge = document.getElementById('notification-badge');
+        if (badge) badge.style.display = hasNew ? 'block' : 'none';
+    }
+    updateGlobalBadge();
+
+
+    /* ============================
+       (2) 게시글 / 댓글 더미 데이터
+       ============================ */
     const MOCK_POSTS = [
-        { postId: 10, title: '[필독] 공지사항 및 매너 점수 안내', writer: '관리자', writerId: 1000, content: '안녕하세요. MULTI FC입니다. 원활하고 공정한 경기 매칭을 위해 매너 점수(Manner Score) 시스템을 다음과 같이 개편합니다. 모든 사용자는 변경된 규정을 숙지하여 주시기 바랍니다. - 변경 사항 요약 - 1. 경기 종료 후 의무적으로 팀원 평가를 진행해야 합니다. 2. 평가 미참여시 다음 경기 매칭에 불이익이 발생할 수 있습니다.', category: 'notice', date: '2025-10-25', viewCount: 1200, comments: [
-                { id: 1, writer: 'UserA', writerId: 1001, date: '2025-10-25', content: '운영진님, 매너 시스템 도입 찬성합니다! 기대돼요.', parentCommentId: null, writerId: 1001 },
-                { id: 2, writer: 'UserB', writerId: 1002, date: '2025-10-26', content: '좋은 취지인데, 평가가 너무 주관적이지 않도록 관리 부탁드립니다.', parentCommentId: null, writerId: 1002 },
-                { id: 3, writer: '관리자', writerId: 1000, date: '2025-11-06', content: '댓글 작성 테스트.', parentCommentId: null, writerId: 1000 },
-                { id: 4, writer: '관리자', writerId: 1000, date: '2025-11-06', content: '@UserB 답글 테스트.', parentCommentId: 2, writerId: 1000 } // 대댓글 시뮬레이션 (UserB에게 답글)
-            ] },
-        { postId: 11, title: '자유게시판에서 작성된 글입니다.', writer: 'UserB', writerId: 1001, content: '이것이 자유게시판의 글 내용입니다!', category: 'free', date: '2025-11-01', viewCount: 50, comments: [{ id: 5, writer: 'UserC', writerId: 1003, date: '2025-11-01', content: '자유글 댓글.', parentCommentId: null, writerId: 1003 }] },
-        { postId: 12, title: '팀원 모집합니다!', writer: '캡틴손', writerId: 1002, content: '팀원 모집 내용', category: 'team', date: '2025-11-02', viewCount: 20, comments: [] },
+        {
+            postId: 10,
+            title: '[필독] 공지사항 및 매너 점수 안내',
+            writer: '관리자',
+            writerId: 1000,
+            content: '안녕하세요. MULTI FC입니다. 원활하고 공정한 경기 매칭을 위해 매너 점수(Manner Score) 시스템을 다음과 같이 개편합니다. 모든 사용자는 변경된 규정을 숙지하여 주시기 바랍니다. - 변경 사항 요약 - 1. 경기 종료 후 의무적으로 팀원 평가를 진행해야 합니다. 2. 평가 미참여시 다음 경기 매칭에 불이익이 발생할 수 있습니다.',
+            category: 'notice',
+            date: '2025-10-25',
+            viewCount: 1200,
+            comments: [
+                { id: 1, writer: 'UserA', writerId: 1001, date: '2025-10-25', content: '운영진님, 매너 시스템 도입 찬성합니다! 기대돼요.', parentCommentId: null },
+                { id: 2, writer: 'UserB', writerId: 1002, date: '2025-10-26', content: '좋은 취지인데, 평가가 너무 주관적이지 않도록 관리 부탁드립니다.', parentCommentId: null },
+                { id: 3, writer: '관리자', writerId: 1000, date: '2025-11-06', content: '댓글 작성 테스트.', parentCommentId: null },
+                { id: 4, writer: '관리자', writerId: 1000, date: '2025-11-06', content: '@UserB 답글 테스트.', parentCommentId: 2 }
+            ]
+        },
+        {
+            postId: 11,
+            title: '자유게시판에서 작성된 글입니다.',
+            writer: 'UserB',
+            writerId: 1001,
+            content: '이것이 자유게시판의 글 내용입니다!',
+            category: 'free',
+            date: '2025-11-01',
+            viewCount: 50,
+            comments: [
+                { id: 5, writer: 'UserC', writerId: 1003, date: '2025-11-01', content: '자유글 댓글.', parentCommentId: null }
+            ]
+        },
+        {
+            postId: 12,
+            title: '팀원 모집합니다!',
+            writer: '캡틴손',
+            writerId: 1002,
+            content: '팀원 모집 내용',
+            category: 'team',
+            date: '2025-11-02',
+            viewCount: 20,
+            comments: []
+        },
     ];
     let POST_DATA = null;
 
-    const CURRENT_USER_ID = 1000; // 현재 로그인된 사용자 ID 가정 (권한 체크용: 관리자와 동일)
-    const CURRENT_USER_WRITER_NAME = '관리자'; // 현재 로그인된 사용자 이름 가정
+    const CURRENT_USER_ID = 1000;         // 로그인 유저 ID (mock)
+    const CURRENT_USER_WRITER_NAME = '관리자'; // 로그인 유저 이름 (mock)
 
+
+    /* ============================
+       (3) 페이지 로드 시 초기화
+       ============================ */
     document.addEventListener('DOMContentLoaded', () => {
-        // 1. 헤더 요소들 먼저 잡기
-        const profileMenuToggle = document.getElementById('profile-menu-toggle');
-        const navLoginLink = document.getElementById('nav-login-link');
-        const navLogoutLink = document.getElementById('nav-logout-link');
-
-        // 2. 토큰 가져오기
         const accessToken = localStorage.getItem('accessToken');
 
-        // 3. 로그인/비로그인에 따른 헤더 UI 처리
+        // 로그인/비로그인에 따른 헤더 UI 토글
         if (accessToken) {
             if (profileMenuToggle) profileMenuToggle.style.display = 'block';
-            if (navLoginLink) navLoginLink.parentElement.style.display = 'none';
-            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'list-item';
+            if (navLoginLink && navLoginLink.parentElement) navLoginLink.parentElement.style.display = 'none';
+            if (navLogoutLink && navLogoutLink.parentElement) navLogoutLink.parentElement.style.display = 'list-item';
         } else {
             if (profileMenuToggle) profileMenuToggle.style.display = 'none';
-            if (navLoginLink) navLoginLink.parentElement.style.display = 'list-item';
-            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'none';
+            if (navLoginLink && navLoginLink.parentElement) navLoginLink.parentElement.style.display = 'list-item';
+            if (navLogoutLink && navLogoutLink.parentElement) navLogoutLink.parentElement.style.display = 'none';
         }
 
-        // 4. 여기서부터는 원래 하던 게시글 로딩 로직
+        // 필요하면: 비회원일 때 상세도 막고 로그인 보내고 싶다면 여기서 처리
+        // if (!accessToken) {
+        //     alert("❌ 회원 전용 페이지입니다.\n로그인 후 이용 가능합니다.");
+        //     localStorage.setItem('redirectAfterLogin', window.location.pathname);
+        //     window.location.href = '/login';
+        //     return;
+        // }
+
+        // URL에서 postId 추출
         const urlParams = new URLSearchParams(window.location.search);
         const postIdFromParam = urlParams.get('postId');
 
         const pathSegments = window.location.pathname.split('/');
-        const postIdFromPath = pathSegments.pop() || pathSegments.pop();
+        const postIdFromPath = pathSegments.pop() || pathSegments.pop(); // /community/detail/10 같은 경우
 
         const targetPostId =
             postIdFromParam ||
@@ -340,19 +460,21 @@
 
         loadPostDetail(targetPostId);
     });
+
+
+    /* ============================
+       (4) 게시글 상세 로딩
+       ============================ */
     function loadPostDetail(postId) {
-        // 1. URL에서 받은 postId로 MOCK_POSTS 배열에서 해당 게시글을 찾습니다.
         const post = MOCK_POSTS.find(p => p.postId === parseInt(postId));
         window.POST_DATA = post;
 
         if (!post) {
             document.getElementById('post-title').textContent = '오류: 게시글을 찾을 수 없습니다.';
-            document.getElementById('detail-header').style.display = 'none';
             document.getElementById('post-content').textContent = '존재하지 않는 게시글입니다.';
             return;
         }
 
-        // 2. DOM 업데이트
         document.getElementById('post-title').textContent = post.title;
         document.getElementById('detail-writer').textContent = `작성자: ${post.writer}`;
         document.getElementById('detail-date').textContent = post.date;
@@ -361,12 +483,10 @@
         document.getElementById('post-content').innerHTML = post.content.replace(/\n/g, '<br>');
         document.getElementById('comment-count').textContent = post.comments.length;
 
-        // 3. 권한 체크 및 버튼 표시
         const editBtn = document.getElementById('btn-edit-post');
         const deleteBtn = document.getElementById('btn-delete-post');
 
         if (post.writerId === CURRENT_USER_ID) {
-            // 작성자가 현재 유저인 경우, 수정/삭제 버튼을 표시
             if (editBtn) {
                 editBtn.style.display = 'inline-block';
                 editBtn.onclick = handleEditPost;
@@ -376,37 +496,29 @@
                 deleteBtn.onclick = handleDeletePost;
             }
         } else {
-            // 작성자가 아닐 경우, 버튼 숨김
             if (editBtn) editBtn.style.display = 'none';
             if (deleteBtn) deleteBtn.style.display = 'none';
         }
 
-        // 4. 댓글 렌더링
         renderComments(post.comments);
     }
 
-    // ⭐⭐ 대댓글 폼 제거 함수 ⭐⭐
-    function removeReplyForm(targetCommentId) {
-        const parentComment = document.querySelector(`.comment-item[data-comment-id="${targetCommentId}"]`);
-        const form = parentComment ? parentComment.nextElementSibling : null;
 
-        // 부모 댓글의 다음 요소가 폼 컨테이너라면 제거
-        if (form && form.classList.contains('reply-form-container')) {
-            form.remove();
-        }
-    }
+    /* ============================
+       (5) 댓글 렌더링/CRUD/대댓글
+       ============================ */
 
-    // ⭐⭐ 댓글 목록 렌더링 함수 (대댓글 위치 조정) ⭐⭐
+    // 댓글 리스트 렌더링
     function renderComments(comments) {
         const commentsList = document.getElementById('comments-list');
         commentsList.innerHTML = '';
 
-        if (comments.length === 0) {
-            commentsList.innerHTML = '<p style="color: #999; padding: 10px 0; text-align: center;">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>';
+        if (!comments || comments.length === 0) {
+            commentsList.innerHTML =
+                '<p style="color: #999; padding: 10px 0; text-align: center;">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</p>';
             return;
         }
 
-        // 1. DOM 요소를 저장할 맵
         const commentMap = {};
 
         comments.forEach(comment => {
@@ -442,32 +554,29 @@
             commentMap[comment.id] = item;
         });
 
-        // 2. DOM에 삽입 (계층 구조에 따라 부모 댓글 뒤에 삽입)
+        // 계층 구조에 따라 DOM에 삽입
         comments.forEach(comment => {
             const commentElement = commentMap[comment.id];
 
             if (comment.parentCommentId === null) {
-                // 최상위 댓글은 commentsList에 직접 삽입
                 commentsList.appendChild(commentElement);
             } else {
-                // 대댓글은 부모 댓글을 찾아 그 뒤에 삽입
                 const parentElement = commentMap[comment.parentCommentId];
                 if (parentElement) {
                     parentElement.insertAdjacentElement('afterend', commentElement);
                 } else {
-                    // 부모가 없으면 최상위에 삽입 (오류 대비)
                     commentsList.appendChild(commentElement);
                 }
             }
         });
     }
 
-    // ⭐⭐ 댓글 작성 로직 (Comment 엔티티 반영) ⭐⭐
+    // 댓글 작성
     function submitComment() {
         const commentInput = document.getElementById('comment-input');
         const content = commentInput.value.trim();
 
-        if (content.length === 0) {
+        if (!content) {
             alert('댓글 내용을 입력해주세요.');
             return;
         }
@@ -475,10 +584,10 @@
         const newComment = {
             id: Date.now(),
             writer: CURRENT_USER_WRITER_NAME,
-            writerId: CURRENT_USER_ID, // ID 저장
+            writerId: CURRENT_USER_ID,
             date: new Date().toISOString().slice(0, 10),
-            content: content,
-            parentCommentId: null // 최상위 댓글로 등록
+            content,
+            parentCommentId: null
         };
 
         if (window.POST_DATA) {
@@ -488,12 +597,9 @@
             document.getElementById('comment-count').textContent = window.POST_DATA.comments.length;
             document.getElementById('detail-comments').textContent = `댓글: ${window.POST_DATA.comments.length}`;
         }
-
-        console.log("댓글 제출 시뮬레이션:", newComment);
     }
 
-
-    // ⭐⭐ 댓글 CRUD Mock 함수 구현 ⭐⭐
+    // 댓글 수정
     function handleCommentEdit(commentId, currentContent) {
         const newContent = prompt(`댓글 ${commentId}번 수정:`, currentContent);
         if (newContent && newContent.trim().length > 0) {
@@ -509,8 +615,9 @@
         }
     }
 
+    // 댓글 삭제
     function handleCommentDelete(commentId) {
-        if (confirm(`댓글을 정말로 삭제하시겠습니까?`)) {
+        if (confirm('댓글을 정말로 삭제하시겠습니까?')) {
             const initialLength = window.POST_DATA.comments.length;
             window.POST_DATA.comments = window.POST_DATA.comments.filter(c => c.id !== commentId);
 
@@ -518,19 +625,22 @@
                 renderComments(window.POST_DATA.comments);
                 document.getElementById('comment-count').textContent = window.POST_DATA.comments.length;
                 document.getElementById('detail-comments').textContent = `댓글: ${window.POST_DATA.comments.length}`;
-                alert("댓글이 삭제되었습니다.");
+                alert('댓글이 삭제되었습니다.');
             }
         }
     }
 
-    // ⭐⭐ 대댓글 기능 UI: 폼 동적 생성 및 삽입 ⭐⭐
+    // 대댓글 폼 제거
+    function removeReplyForm(targetCommentId) {
+        const form = document.querySelector(`.reply-form-container[data-parent-id="${targetCommentId}"]`);
+        if (form) form.remove();
+    }
+
+    // 대댓글 폼 생성
     function handleReply(commentId, writerName, event) {
         const parentComment = event.target.closest('.comment-item');
-
-        // 1. 다른 열려있는 폼 닫기
         document.querySelectorAll('.reply-form-container').forEach(form => form.remove());
 
-        // 2. 새로운 폼 생성
         const replyFormHTML = `
             <div class="reply-form-container" data-parent-id="${commentId}">
                 <h4 style="font-size: 14px; margin-bottom: 8px;">${writerName}님에게 답글 작성:</h4>
@@ -542,31 +652,19 @@
             </div>
         `;
 
-        // 댓글 항목 바로 아래에 폼 삽입
         parentComment.insertAdjacentHTML('afterend', replyFormHTML);
 
-        // 3. 새로 생성된 textarea에 포커스
         const replyTextarea = document.getElementById(`reply-input-${commentId}`);
-        if (replyTextarea) {
-            replyTextarea.focus();
-        }
+        if (replyTextarea) replyTextarea.focus();
     }
 
-    // ⭐⭐ 대댓글 폼 제거 함수 ⭐⭐
-    function removeReplyForm(targetCommentId) {
-        const form = document.querySelector(`.reply-form-container[data-parent-id="${targetCommentId}"]`);
-        if (form) {
-            form.remove();
-        }
-    }
-
-    // ⭐⭐ 대댓글 제출 (Mock) ⭐⭐
+    // 대댓글 등록
     function submitReply(parentCommentId, writerName) {
         const replyInput = document.getElementById(`reply-input-${parentCommentId}`);
         const content = replyInput.value.trim();
 
-        if (content.length === 0) {
-            alert("답글 내용을 입력해주세요.");
+        if (!content) {
+            alert('답글 내용을 입력해주세요.');
             return;
         }
 
@@ -575,8 +673,8 @@
             writer: CURRENT_USER_WRITER_NAME,
             writerId: CURRENT_USER_ID,
             date: new Date().toISOString().slice(0, 10),
-            content: content,
-            parentCommentId: parentCommentId
+            content,
+            parentCommentId
         };
 
         if (window.POST_DATA) {
@@ -587,16 +685,17 @@
         }
     }
 
-
+    // 게시글 삭제
     function handleDeletePost() {
         if (confirm(`정말로 게시글 [${window.POST_DATA.title}]을 삭제하시겠습니까?`)) {
-            alert("게시글이 삭제되었습니다. 목록으로 돌아갑니다. (시뮬레이션)");
+            alert('게시글이 삭제되었습니다. 목록으로 돌아갑니다. (시뮬레이션)');
             location.href = '/community';
         }
     }
 
+    // 게시글 수정
     function handleEditPost() {
-        alert("게시글 수정 페이지로 이동합니다. (구현 필요)");
+        alert('게시글 수정 페이지로 이동합니다. (시뮬레이션)');
         location.href = `/community/write?edit=${window.POST_DATA.postId}`;
     }
 </script>
