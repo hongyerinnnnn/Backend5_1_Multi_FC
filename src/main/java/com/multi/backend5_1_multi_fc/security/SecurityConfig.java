@@ -18,15 +18,24 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // [중요] 회원가입 API 접근을 허용하기 위한 최소한의 설정
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable) // 테스트를 위해 잠시 끔
+                // 1. CSRF(Cross-Site Request Forgery) POST/PUT 요청이 차단
+                .csrf(AbstractHttpConfigurer::disable)
+
+                // 2. Spring Security가 기본으로 제공하는 로그인 폼을 비활성화
+                .formLogin(AbstractHttpConfigurer::disable)
+
+                // 3. HTTP Basic 인증(브라우저 팝업 인증)을 비활성화
+                .httpBasic(AbstractHttpConfigurer::disable)
+
+                // 4. 모든 HTTP 요청에 대해 인증 없이 접근을 허용
+                // 주의 (개발 완료 후에는 .requestMatchers("/api/...).permitAll()" 등으로 변경 해야 함)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/users/signup", "/", "/login").permitAll() // 이 주소는 로그인 없이 접속 허용
-                        .anyRequest().authenticated() // 나머지는 로그인 해야 접속 가능
+                        .anyRequest().permitAll()
                 );
+
         return http.build();
     }
 }
