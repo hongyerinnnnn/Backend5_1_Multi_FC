@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.multi.backend5_1_multi_fc.chat.dto.ChatRoomDto">
+    <resultMap id="ChatRoomResultMap" type="ChatRoomDto">
+        <id property="roomId" column="chat_room_id" />
+        <result property="roomType" column="room_type" />
+        <result property="roomName" column="room_name" />
+        <result property="memberCount" column="member_count" />
+    </resultMap>
+
+    <select id="findChatRoomsByType" parameterType="string" resultMap="ChatRoomResultMap">
+        select *
+        from Chat_Room
+        where room_type= #{roomType}
+    </select>
+
+    <select id="findChatRoomById" parameterType="long" resultMap="ChatRoomResultMap">
+        select *
+        from Chat_Room
+        where chat_room_id = #{roomId}
+    </select>
+
+    <insert id="insertChatRoom" parameterType="com.multi.backend5_1_multi_fc.chat.dto.ChatRoomDto" useGeneratedKeys="true" keyProperty="roomId">
+        insert into Chat_Room (chat_room_id, room_type, room_name, member_count, created_at, updated_at)
+        values (#{roomId}, #{roomType}, #{roomName}, #{memberCount}, now(),now())
+    </insert>
+
+    <update id="updateMemberCount" parameterType="map">
+        update Chat_Room
+        set member_count=#{memberCount}, updated_at = now()
+        where  chat_room_id = #{roomId}
+    </update>
+
+    <delete id="deleteChatRoom" parameterType="long">
+        delete
+        from Chat_Room
+        where chat_room_id =#{roomId};
+    </delete>
+</mapper>

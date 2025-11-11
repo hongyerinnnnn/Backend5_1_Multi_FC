@@ -3,6 +3,7 @@ package com.multi.backend5_1_multi_fc.notification.dao;
 
 import com.multi.backend5_1_multi_fc.notification.dto.NotificationDto;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -16,6 +17,10 @@ public interface NotificationDao {
 
     //읽지 않은 알림 조회
     List<NotificationDto> findUnreadByUserId(Long userId);
+
+    NotificationDto findUnreadChatNotification(@Param("userId") Long userId, @Param("referenceId") Long referenceId);
+
+    void updateContent(@Param("notificationId") Long notificationId, @Param("content") String content);
 
     //읽지 않은 알림 개수
     int countUnreadByUserId(Long userId);

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -36,6 +37,56 @@ public class NotificationService {
                 "/queue/notifications",             // 구독 경로
                 notification                        // 전송할 데이터
         );
+    }
+
+    public void createOrUpdateChatNotification(Long userId, String roomName, Long roomId){
+        NotificationDto existingNotification = notificationDao.findUnreadChatNotification(userId, roomId);
+
+        if(existingNotification != null){
+            int currentCount = extractMessageCount(existingNotification.getContent());
+            int newCount = currentCount + 1;
+
+            String updatedContent = roomName + "방에 새로운 메세지 " + newCount + "건";
+            existingNotification.setContent(updatedContent);
+
+            notificationDao.updateContent(existingNotification.getNotificationId(), updatedContent);
+
+            simpMessagingTemplate.convertAndSendToUser(
+                    String.valueOf(userId),
+                    "/queue/notifications",
+                    existingNotification
+            );
+        } else {
+            NotificationDto notification = NotificationDto.builder()
+                    .userId(userId)
+                    .content(roomName + " 방에 새로운 메시지 1건")
+                    .type("채팅")
+                    .referenceId(roomId)
+                    .isRead(false)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            notificationDao.insert(notification);
+
+            simpMessagingTemplate.convertAndSendToUser(
+                    String.valueOf(userId),
+                    "/queue/notifications",
+                    notification
+            );
+        }
+    }
+    private int extractMessageCount(String content){
+        try{
+            String[] parts = content.split(" ");
+            for(int i =0; i < parts.length; i++){
+                if(parts[i].endsWith("건")){
+                    return Integer.parseInt(parts[i].replace("건",""));
+                }
+            }
+        } catch (Exception e){
+            return 1;
+        }
+        return 1;
     }
 
     //사용자 알림 목록 조회
