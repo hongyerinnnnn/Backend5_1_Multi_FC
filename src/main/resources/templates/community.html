@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi FC - 커뮤니티</title>
+
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        /* (style 태그 내용은 이전과 동일) */
+        .community-main {
+            padding: 100px 40px 40px 40px;
+            background-color: #f7f7f7;
+            min-height: 100vh;
+        }
+        .board-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .board-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .board-tabs {
+            display: flex;
+            flex-grow: 1;
+        }
+        .board-tabs button {
+            background: none;
+            border: none;
+            padding: 10px 15px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #777;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: color 0.2s, border-bottom 0.2s;
+            margin-right: 5px;
+        }
+        .board-tabs button.active {
+            color: #6c5ce7;
+            border-bottom-color: #6c5ce7;
+        }
+        .write-button {
+            padding: 8px 15px;
+            background-color: #6c5ce7;
+            color: white;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+            white-space: nowrap;
+        }
+        .write-button:hover {
+            background-color: #8e44ad;
+        }
+        /* ⭐⭐ 추가된 스타일: 검색 섹션 ⭐⭐ */
+        .search-area {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+        .search-area select, .search-area input[type="text"] {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .search-area button {
+            padding: 8px 15px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* 게시글 목록 테이블 */
+        .post-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+        }
+        .post-table th, .post-table td {
+            padding: 12px 10px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        .post-table th {
+            background-color: #f8f8f8;
+            font-weight: 700;
+            color: #555;
+        }
+        .post-table td {
+            color: #333;
+        }
+        .post-table .col-title {
+            text-align: left;
+            font-weight: 600;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .post-table .col-title:hover {
+            color: #6c5ce7;
+        }
+        .col-category {
+            color: #6c5ce7;
+        }
+
+        /* 페이지네이션 */
+        .pagination {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .pagination a {
+            padding: 5px 10px;
+            margin: 0 3px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-decoration: none;
+            color: #555;
+        }
+        .pagination a.active {
+            background-color: #6c5ce7;
+            color: white;
+            border-color: #6c5ce7;
+        }
+    </style>
+</head>
+<body>
+
+<header class="quick-menu">
+    <div class="logo"><a href="/">Multi FC</a></div>
+    <div class="header-icons">
+        <button id="profile-menu-toggle" class="profile-icon" style="position: relative;">
+            <i class="fas fa-user-circle"></i>
+            <span id="notification-badge" class="notification-badge"></span>
+        </button>
+        <div id="profile-menu" class="user-menu">
+            <div class="user-info">
+                <strong><span id="user-menu-username">사용자</span>님</strong>
+                <p>환영합니다!</p>
+            </div>
+            <ul>
+                <li><a href="/notifications" id="nav-notifications-link"><i class="fas fa-bell"></i> 알림 목록</a></li>
+                <li><a href="/mypage"><i class="fas fa-user"></i> 마이페이지</a></li>
+                <li><a href="/profile/edit"><i class="fas fa-user-edit"></i> 프로필 수정</a></li>
+                <li><a href="#" id="logout-button"><i class="fas fa-sign-out-alt"></i> 로그아웃</a></li>
+            </ul>
+        </div>
+        <button id="menu-toggle" class="menu-toggle-btn"><i class="fas fa-bars"></i></button>
+    </div>
+
+    <nav id="main-menu" class="main-nav">
+        <ul>
+            <li><a href="/" class="active"><i class="fas fa-home"></i> 메인 (Home)</a></li>
+            <li><a href="/fields"><i class="fas fa-search"></i> 구장검색</a></li>
+            <li><a href="/community" ><i class="fas fa-users"></i> 커뮤니티</a></li>
+            <li id="nav-chat-link-li"><a href="/chat" id="nav-chat-link"><i class="fas fa-comments"></i> 실시간채팅</a></li>
+            <li><a href="/login" id="nav-login-link"><i class="fas fa-sign-in-alt"></i> 로그인</a></li>
+            <li><a href="#" id="nav-logout-link"><i class="fas fa-sign-out-alt"></i> 로그아웃</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main class="community-main">
+    <div class="board-container">
+        <div class="board-controls">
+            <div class="board-tabs" id="community-tabs">
+                <button data-category="all" class="active">전체 목록</button>
+                <button data-category="notice">공지사항</button>
+                <button data-category="free">자유게시판</button>
+                <button data-category="team">팀원모집</button>
+            </div>
+            <a href="/community/write" class="write-button" id="write-post-btn">
+                <i class="fas fa-pencil-alt"></i> 글쓰기
+            </a>
+        </div>
+
+        <div class="search-area">
+            <select id="search-type">
+                <option value="title">제목</option>
+                <option value="content">내용</option>
+                <option value="writer">작성자</option>
+            </select>
+            <input type="text" id="search-keyword" placeholder="검색어를 입력하세요">
+            <button id="search-exec-btn"><i class="fas fa-search"></i> 검색</button>
+        </div>
+        <table class="post-table">
+            <thead>
+            <tr>
+                <th style="width: 8%;">번호</th>
+                <th style="width: 10%;">카테고리</th>
+                <th style="width: 45%;">제목</th> <th style="width: 10%;"><i class="fas fa-comment-dots" title="댓글 수"></i></th>
+                <th style="width: 12%;">작성자</th>
+                <th style="width: 15%;">날짜</th>
+                <th style="width: 7%;"><i class="fas fa-eye"></i></th>
+            </tr>
+            </thead>
+            <tbody id="post-list-body">
+            </tbody>
+        </table>
+
+        <div class="pagination" id="community-pagination">
+            <a href="#">&lt;</a>
+            <a href="#" class="active">1</a>
+            <a href="#">2</a>
+            <a href="#">3</a>
+            <a href="#">&gt;</a>
+        </div>
+    </div>
+</main>
+
+<script>
+    const menuToggle = document.getElementById('menu-toggle');
+    const mainMenu = document.getElementById('main-menu');
+    const profileMenuToggle = document.getElementById('profile-menu-toggle');
+    const profileMenu = document.getElementById('profile-menu');
+    const logoutButton = document.getElementById('logout-button');
+    const navNotificationsLink = document.getElementById('nav-notifications-link');
+
+    // 혹시 나중에 login/logout 메뉴를 nav에 다시 넣을 경우 대비
+    const navLoginLink = document.getElementById('nav-login-link');
+    const navLogoutLink = document.getElementById('nav-logout-link');
+
+    // 햄버거 버튼 → 메인 메뉴 열기/닫기
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            if (mainMenu) mainMenu.classList.toggle('show');
+            if (profileMenu) profileMenu.classList.remove('show');
+        });
+    }
+
+    // 프로필 아이콘 → 프로필 메뉴 열기/닫기
+    if (profileMenuToggle) {
+        profileMenuToggle.addEventListener('click', () => {
+            if (profileMenu) profileMenu.classList.toggle('show');
+            if (mainMenu) mainMenu.classList.remove('show');
+        });
+    }
+
+    // 헤더 밖 클릭 시 둘 다 닫기
+    document.addEventListener('click', (event) => {
+        const header = document.querySelector('header');
+        if (!header.contains(event.target)) {
+            if (mainMenu) mainMenu.classList.remove('show');
+            if (profileMenu) profileMenu.classList.remove('show');
+        }
+    });
+
+    // 로그아웃 (프로필 메뉴 안)
+    if (logoutButton) {
+        logoutButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('hasReadReviews');
+            localStorage.removeItem('hasReadSchedules');
+            window.location.href = '/login';
+        });
+    }
+
+    // 로그아웃 (nav에 따로 있을 경우)
+    if (navLogoutLink) {
+        navLogoutLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('hasReadReviews');
+            localStorage.removeItem('hasReadSchedules');
+            window.location.href = '/login';
+        });
+    }
+
+    // 알림 메뉴 클릭 시
+    if (navNotificationsLink) {
+        navNotificationsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.setItem('hasReadReviews', 'true');
+            window.location.href = '/notifications';
+        });
+    }
+
+    /* ============================
+       (2) 알림 배지 표시 함수
+       ============================ */
+    function updateGlobalBadge() {
+        const hasNew = localStorage.getItem('hasNewNotification') === 'true';
+        const badge = document.getElementById('notification-badge');
+        if (badge) badge.style.display = hasNew ? 'block' : 'none';
+    }
+
+    updateGlobalBadge();
+
+    /* ============================
+       (3) 더미 초기 게시글 데이터
+       ============================ */
+    const initialPosts = [
+        { id: 1000, category: 'notice', categoryDisplay: '공지', title: '[필독] 공지사항 및 매너 점수 안내', writer: '관리자', date: '2025-10-25', commentCount: 3, viewCount: 1200 },
+        { id: 999, category: 'team', categoryDisplay: '팀모집', title: '일요 새벽 경기 인원 모집 (MF 급구)', writer: '캡틴손', date: '2025-10-31', commentCount: 12, viewCount: 150 },
+        { id: 998, category: 'free', categoryDisplay: '자유', title: '이번 주말 풋살화 추천 받아요', writer: '풋살매니아', date: '2025-10-28', commentCount: 2, viewCount: 80 },
+    ];
+
+    /* ============================
+       (4) 커뮤니티 목록 / 검색 / 페이징
+       ============================ */
+    const postListBody = document.getElementById('post-list-body');
+    const tabsContainer = document.getElementById('community-tabs');
+    const writeButton = document.getElementById('write-post-btn');
+    const searchExecBtn = document.getElementById('search-exec-btn');
+    const paginationContainer = document.getElementById('community-pagination');
+
+    const POSTS_PER_PAGE = 10;
+    let allFilteredPosts = [];
+
+    // 로컬스토리지 + 초기데이터 통합
+    function getAllPosts() {
+        let localPostsRaw = [];
+        try {
+            const storedData = localStorage.getItem('community_posts');
+            if (storedData) {
+                localPostsRaw = JSON.parse(storedData);
+            }
+        } catch (e) {
+            console.error("Local Storage data corrupted, reset. Error:", e);
+            localStorage.removeItem('community_posts');
+            localPostsRaw = [];
+        }
+
+        const localPosts = localPostsRaw.map(post => ({
+            ...post,
+            id: String(post.id),
+            commentCount: post.commentCount || 0,
+            viewCount: post.viewCount || 0,
+            categoryDisplay:
+                post.categoryDisplay ||
+                (post.category === 'notice'
+                    ? '공지'
+                    : post.category === 'free'
+                        ? '자유'
+                        : '팀모집')
+        }));
+
+        const combinedPosts = [...localPosts];
+
+        // 초기 데이터 중, 로컬에 없는 것만 추가
+        initialPosts.forEach(initialPost => {
+            if (!localPosts.some(p => String(p.id) === String(initialPost.id))) {
+                combinedPosts.push({ ...initialPost, id: String(initialPost.id) });
+            }
+        });
+
+        // ID 내림차순 정렬
+        combinedPosts.sort((a, b) => parseInt(b.id) - parseInt(a.id));
+        return combinedPosts;
+    }
+
+    // 페이지네이션 렌더링
+    function renderPagination(totalPosts, currentPage) {
+        const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
+        paginationContainer.innerHTML = '';
+
+        if (totalPages <= 1) return;
+
+        const pagesPerGroup = 10;
+        const currentGroup = Math.ceil(currentPage / pagesPerGroup);
+        const startPage = (currentGroup - 1) * pagesPerGroup + 1;
+        const endPage = Math.min(startPage + pagesPerGroup - 1, totalPages);
+
+        const prevPage = currentPage > 1 ? currentPage - 1 : 1;
+        const prevDisabled = currentPage === 1;
+        paginationContainer.innerHTML += `<a href="#" data-page="${prevPage}" class="${prevDisabled ? 'disabled' : ''}">&lt;</a>`;
+
+        for (let i = startPage; i <= endPage; i++) {
+            paginationContainer.innerHTML += `<a href="#" data-page="${i}" class="${i === currentPage ? 'active' : ''}">${i}</a>`;
+        }
+
+        const nextPage = currentPage < totalPages ? currentPage + 1 : totalPages;
+        const nextDisabled = currentPage === totalPages;
+        paginationContainer.innerHTML += `<a href="#" data-page="${nextPage}" class="${nextDisabled ? 'disabled' : ''}">&gt;</a>`;
+
+        paginationContainer.querySelectorAll('a').forEach(link => {
+            if (!link.classList.contains('disabled')) {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const newPage = parseInt(e.target.dataset.page);
+                    if (newPage > 0 && newPage <= totalPages) {
+                        const activeTab = document.querySelector('.board-tabs button.active');
+                        const category = activeTab ? activeTab.dataset.category : 'all';
+                        const keyword = document.getElementById('search-keyword').value;
+                        const type = document.getElementById('search-type').value;
+                        renderPostList(category, keyword, type, newPage);
+                    }
+                });
+            }
+        });
+    }
+
+    // 게시글 목록 렌더링
+    function renderPostList(category, searchKeyword = '', searchType = 'title', page = 1) {
+        const allPosts = getAllPosts();
+        let filtered = allPosts;
+
+        if (category !== 'all') {
+            filtered = filtered.filter(post => String(post.category) === String(category));
+        }
+
+        if (searchKeyword) {
+            const keyword = searchKeyword.toLowerCase();
+            filtered = filtered.filter(post => {
+                if (searchType === 'title' && post.title.toLowerCase().includes(keyword)) return true;
+                if (searchType === 'writer' && post.writer.toLowerCase().includes(keyword)) return true;
+                // content 검색은 실제로 content를 가지고 있을 때만 가능 (지금은 목록에서 사용 X)
+                return false;
+            });
+        }
+
+        allFilteredPosts = filtered;
+        const totalPosts = allFilteredPosts.length;
+
+        const startIndex = (page - 1) * POSTS_PER_PAGE;
+        const postsToDisplay = allFilteredPosts.slice(startIndex, startIndex + POSTS_PER_PAGE);
+
+        postListBody.innerHTML = '';
+
+        if (totalPosts === 0) {
+            postListBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; color: #999; padding: 50px;">
+                        게시글이 없습니다.
+                    </td>
+                </tr>
+            `;
+            renderPagination(0, 1);
+            return;
+        }
+
+        postsToDisplay.forEach((post, index) => {
+            const row = document.createElement('tr');
+            row.dataset.postId = post.id;
+
+            const sequentialId = startIndex + index + 1;
+
+            row.innerHTML = `
+                <td>${sequentialId}</td>
+                <td class="col-category">${post.categoryDisplay}</td>
+                <td class="col-title">${post.title}</td>
+                <td>${post.commentCount}</td>
+                <td>${post.writer}</td>
+                <td>${post.date}</td>
+                <td>${post.viewCount}</td>
+            `;
+            postListBody.appendChild(row);
+        });
+
+        renderPagination(totalPosts, page);
+    }
+
+    // 검색 버튼
+    if (searchExecBtn) {
+        searchExecBtn.addEventListener('click', () => {
+            const activeTab = document.querySelector('.board-tabs button.active');
+            const category = activeTab ? activeTab.dataset.category : 'all';
+            const keyword = document.getElementById('search-keyword').value;
+            const type = document.getElementById('search-type').value;
+            renderPostList(category, keyword, type, 1);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const accessToken = localStorage.getItem('accessToken');
+        const profileIcon = document.getElementById('profile-menu-toggle');
+        const userMenuName = document.getElementById('user-menu-username');
+
+        // 🔒 회원 전용 페이지: 비로그인 시 막고 로그인으로 보냄
+        if (!accessToken) {
+            alert("❌ 회원 전용 페이지입니다.\n로그인 후 이용 가능합니다.");
+            localStorage.setItem('redirectAfterLogin', window.location.pathname);
+            window.location.href = '/login';
+            return;
+        }
+
+        // ✅ 로그인 상태 UI
+        if (profileIcon) profileIcon.style.display = 'flex';
+        if (userMenuName) userMenuName.textContent = localStorage.getItem('username') || '사용자';
+
+        // 만약 nav에 로그인/로그아웃 버튼이 있다면 토글 (없으면 그냥 무시됨)
+        if (navLoginLink && navLoginLink.parentElement) {
+            navLoginLink.parentElement.style.display = 'none';
+        }
+        if (navLogoutLink && navLogoutLink.parentElement) {
+            navLogoutLink.parentElement.style.display = 'list-item';
+        }
+
+        // 알림 배지 초기 표시 + 스토리지 변경 시 반영
+        updateGlobalBadge();
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'hasNewNotification') updateGlobalBadge();
+        });
+
+        // 카테고리 탭 클릭 이벤트
+        const tabs = tabsContainer.querySelectorAll('button');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('search-keyword').value = '';
+                renderPostList(tab.dataset.category, '', 'title', 1);
+            });
+        });
+
+        // 초기 로드: 전체 목록
+        renderPostList('all');
+
+        // 제목 클릭 → 상세 페이지 이동
+        document.querySelector('.post-table').addEventListener('click', (e) => {
+            const titleCell = e.target.closest('.col-title');
+            if (!titleCell) return;
+            const postId = titleCell.closest('tr').dataset.postId;
+            location.href = `/community/detail/${postId}`;
+        });
+    });
+</script>
+
+</body>
+</html>
