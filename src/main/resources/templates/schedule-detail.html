@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'경기 상세 (ID: ' + ${matchId} + ') - MULTI FC'">MULTI FC - 일정 상세</title>
+
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        .schedule-search-main {
+            padding: 100px 40px 40px 40px;
+            background-color: #f7f7f7;
+            min-height: 100vh;
+        }
+        .search-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .search-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #6c5ce7;
+            padding-bottom: 10px;
+        }
+
+        /* (★) 상세 페이지 전용 스타일 */
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        @media (min-width: 768px) {
+            .detail-grid {
+                grid-template-columns: 1fr 350px; /* 넓은 화면에서 2열 */
+            }
+        }
+
+        .map-area {
+            width: 100%;
+            height: 300px;
+            background-color: #eee;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #888;
+        }
+        .detail-info-item {
+            display: flex;
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        .detail-info-item i {
+            width: 30px;
+            color: #6c5ce7;
+            font-size: 18px;
+        }
+        .status-card {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .status-card h3 {
+            font-size: 20px;
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .participant-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 20px 0;
+        }
+        /* ⭐⭐ 참여자 목록 상세 스타일 (ERD 반영) ⭐⭐ */
+        .participant-list li {
+            padding: 8px 0;
+            color: #555;
+            font-size: 15px;
+            border-bottom: 1px dashed #eee;
+        }
+        .participant-list li:last-child {
+            border-bottom: none;
+        }
+        .participant-list .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+        .participant-list .user-info .role-badge {
+            font-size: 12px;
+            background: #e74c3c;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 5px;
+            font-weight: 400;
+        }
+        .participant-list .detail-info {
+            font-size: 12px;
+            color: #999;
+            margin-top: 3px;
+        }
+        /* ⭐⭐ 참여자 목록 상세 스타일 끝 ⭐⭐ */
+
+        .join-button {
+            width: 100%;
+            padding: 14px;
+        }
+        .btn-cancel {
+            background-color: #e74c3c; /* 취소는 빨간색 */
+        }
+    </style>
+</head>
+<body>
+
+<header class="quick-menu">
+    <div class="logo"><a href="/">MULTI FC</a></div>
+    <div class="header-icons">
+        <button id="profile-menu-toggle" class="profile-icon" style="position: relative; display: none;">
+            <i class="fas fa-user-circle"></i>
+            <span id="notification-badge" class="notification-badge"></span>
+        </button>
+        <div id="profile-menu" class="user-menu">
+            <div class="user-info">
+                <strong><span id="user-menu-username">사용자</span>님</strong>
+                <p>환영합니다!</p>
+            </div>
+            <ul>
+                <li><a href="/notifications" id="nav-notifications-link"><i class="fas fa-bell"></i> 알림 목록</a></li>
+                <li><a href="/mypage"><i class="fas fa-user"></i> 마이페이지</a></li>
+                <li><a href="/profile/edit"><i class="fas fa-user-edit"></i> 프로필 수정</a></li>
+                <li><a href="#" id="logout-button"><i class="fas fa-sign-out-alt"></i> 로그아웃</a></li>
+            </ul>
+        </div>
+        <button id="menu-toggle" class="menu-toggle-btn"><i class="fas fa-bars"></i></button>
+    </div>
+    <nav id="main-menu" class="main-nav">
+        <ul>
+            <li><a href="/"><i class="fas fa-home"></i> 메인 (Home)</a></li>
+            <li><a href="/fields"><i class="fas fa-search"></i> 구장검색</a></li>
+            <li><a href="/community"><i class="fas fa-users"></i> 커뮤니티</a></li>
+            <li id="nav-chat-link-li"><a href="/chat" id="nav-chat-link"><i class="fas fa-comments"></i> 실시간채팅</a></li>
+            <li><a href="/login" id="nav-login-link"><i class="fas fa-sign-in-alt"></i> 로그인</a></li>
+            <li style="display:none;"><a href="#" id="nav-logout-link"><i class="fas fa-sign-out-alt"></i> 로그아웃</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main class="schedule-search-main">
+    <div class="search-container">
+        <h1 class="search-title" th:text="'경기 상세 정보 (ID: ' + ${matchId} + ')'">📅 일정 상세</h1>
+        <input type="hidden" id="match-id-hidden" th:value="${matchId}">
+
+        <div class="detail-grid">
+
+            <div class="detail-left-column">
+                <div class="map-area" id="map">(KakaoMap API가 표시될 영역)</div>
+
+                <h3>경기 정보</h3>
+                <div class="detail-info-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="detail-datetime">2025-11-01 (토) 19:00</span>
+                </div>
+                <div class="detail-info-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span id="detail-location">서울 강남 풋살장</span>
+                </div>
+                <div class="detail-info-item">
+                    <i class="fas fa-users"></i>
+                    <span id="detail-match-type">개인 매칭 (10명 모집)</span>
+                </div>
+                <div class="detail-info-item">
+                    <i class="fas fa-medal"></i>
+                    <span id="detail-skill-level">중급 레벨 (3.0 이상)</span>
+                </div>
+                <div class="detail-info-item">
+                    <i class="fas fa-info-circle"></i>
+                    <span id="detail-info">초급자 환영! 즐겁게 찰 분들 오세요.</span>
+                </div>
+            </div>
+
+            <div class="detail-right-column">
+                <div class="status-card">
+                    <h3>참여 현황</h3>
+                    <strong><span id="current-players">4</span> / <span id="max-players">10</span> 명</strong>
+                    <ul class="participant-list" id="participant-list">
+                    </ul>
+
+                    <button id="join-match-btn" class="login-button join-button" style="display:none;" onclick="handleJoin()">참여하기</button>
+                    <button id="cancel-match-btn" class="login-button join-button btn-cancel" style="display:none;" onclick="handleCancel()">참여 취소</button>
+
+                    <p id="login-prompt-msg" style="display:none; text-align: center; margin-top: 15px; font-size: 14px;">
+                        참여하려면 <a href="/login" style="color: #6c5ce7; font-weight: 600;">로그인</a>이 필요합니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    // --- (★공통★) 메뉴 토글 로직 (유지) ---
+    const menuToggle = document.getElementById('menu-toggle');
+    const mainMenu = document.getElementById('main-menu');
+    const profileMenuToggle = document.getElementById('profile-menu-toggle');
+    const profileMenu = document.getElementById('profile-menu');
+    const logoutButton = document.getElementById('logout-button');
+    const navNotificationsLink = document.getElementById('nav-notifications-link');
+    const navChatLinkElement = document.getElementById('nav-chat-link-li');
+    const navLoginLink = document.getElementById('nav-login-link');
+    const navLogoutLink = document.getElementById('nav-logout-link');
+
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            mainMenu.classList.toggle('show');
+            profileMenu.classList.remove('show');
+        });
+    }
+    if (profileMenuToggle) {
+        profileMenuToggle.addEventListener('click', () => {
+            profileMenu.classList.toggle('show');
+            mainMenu.classList.remove('show');
+        });
+    }
+    document.addEventListener('click', (event) => {
+        if (!mainMenu.contains(event.target) && !menuToggle.contains(event.target) &&
+            !profileMenu.contains(event.target) && !profileMenuToggle.contains(event.target)) {
+            mainMenu.classList.remove('show');
+            profileMenu.classList.remove('show');
+        }
+    });
+    if (logoutButton) {
+        logoutButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('hasReadReviews');
+            localStorage.removeItem('hasReadSchedules');
+            window.location.href = '/login';
+        });
+    }
+    if (navNotificationsLink) {
+        navNotificationsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.setItem('hasReadReviews', 'true');
+            localStorage.setItem('hasReadSchedules', 'true');
+            window.location.href = '/notifications';
+        });
+    }
+    if (navLogoutLink) {
+        navLogoutLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('hasReadReviews');
+            localStorage.removeItem('hasReadSchedules');
+            window.location.href = '/login';
+        });
+    }
+    // --- (★공통★) 메뉴 토글 로직 끝 ---
+
+
+    // ⭐⭐ 매너 점수 제거: 더미 참여자 데이터 수정 ⭐⭐
+    // mannerScore 필드 제거
+    const MOCK_PARTICIPANTS = [
+        { id: 101, username: 'captain_son', nickname: '캡틴손', position: 'MF', role: 'Host' },
+        { id: 102, username: 'closer_kim', nickname: '구원투수', position: 'DF', role: 'Player' },
+        { id: 103, username: 'shootdori', nickname: '슛돌이', position: 'FW', role: 'Player' },
+        { id: 104, username: 'keeper_k', nickname: '골키퍼K', position: 'GK', role: 'Player' },
+        // 현재 사용자 (참여 상태 시뮬레이션)
+        { id: 999, username: 'my_user_id', nickname: '나의닉네임', position: 'ALA', role: 'Player' }
+    ];
+
+    const CURRENT_USER_ID = 999;
+    let isParticipating = false;
+
+    // ⭐⭐ 매너 점수 제거: 참여자 목록 렌더링 함수 수정 ⭐⭐
+    function renderParticipantList(participants) {
+        const listEl = document.getElementById('participant-list');
+        const currentPlayersEl = document.getElementById('current-players');
+        const maxPlayersEl = document.getElementById('max-players');
+        listEl.innerHTML = '';
+
+        // 현재 사용자 참여 상태 초기화 및 확인
+        isParticipating = participants.some(user => user.id === CURRENT_USER_ID);
+
+        participants.forEach(user => {
+            const listItem = document.createElement('li');
+            const roleBadge = user.role === 'Host' ? `<span class="role-badge">주최자</span>` : '';
+
+            const nicknameDisplay = user.id === CURRENT_USER_ID ? `${user.nickname} (나)` : `${user.nickname}`;
+            const userIdDisplay = user.username ? ` (${user.username})` : '';
+
+            listItem.innerHTML = `
+                <div class="user-info">
+                    <span>${nicknameDisplay}${userIdDisplay}</span>
+                    ${roleBadge}
+                </div>
+                <div class="detail-info">
+                    포지션: ${user.position}
+                    </div>
+            `;
+            listEl.appendChild(listItem);
+        });
+
+        // 인원 수 업데이트
+        currentPlayersEl.textContent = participants.length;
+        maxPlayersEl.textContent = '10'; // 더미 최대 인원
+
+        updateJoinButtonState();
+    }
+
+    // ⭐⭐ 버튼 상태 업데이트 함수 (이전 로직 유지) ⭐⭐
+    function updateJoinButtonState() {
+        const joinBtn = document.getElementById('join-match-btn');
+        const cancelBtn = document.getElementById('cancel-match-btn');
+        const loginPrompt = document.getElementById('login-prompt-msg');
+
+        const isLoggedIn = localStorage.getItem('accessToken') !== null;
+
+        if (!isLoggedIn) {
+            joinBtn.style.display = 'none';
+            cancelBtn.style.display = 'none';
+            loginPrompt.style.display = 'block';
+            return;
+        }
+
+        loginPrompt.style.display = 'none';
+
+        if (isParticipating) {
+            joinBtn.style.display = 'none';
+            cancelBtn.style.display = 'block';
+        } else {
+            joinBtn.style.display = 'block';
+            cancelBtn.style.display = 'none';
+        }
+    }
+
+    // ⭐⭐ 매치 참가 로직 (API 호출 시뮬레이션) ⭐⭐
+    function handleJoin() {
+        if (confirm("정말로 이 경기에 참여하시겠습니까?")) {
+            // ⭐ 백엔드 API 호출: POST /api/match/join/{matchId}
+            alert("참여 요청이 완료되었습니다. (시뮬레이션)");
+            // 성공 시 UI 업데이트 (mannerScore 필드 없음)
+            isParticipating = true;
+            const newUser = { id: CURRENT_USER_ID, username: 'my_user_id', nickname: '나의닉네임', position: 'ALA', role: 'Player' };
+            MOCK_PARTICIPANTS.push(newUser);
+            renderParticipantList(MOCK_PARTICIPANTS);
+        }
+    }
+
+    // ⭐⭐ 매치 참가 취소 로직 (API 호출 시뮬레이션) ⭐⭐
+    function handleCancel() {
+        if (confirm("정말로 참여를 취소하시겠습니까?")) {
+            // ⭐ 백엔드 API 호출: DELETE /api/match/cancel/{matchId}
+            alert("참여 취소 요청이 완료되었습니다. (시뮬레이션)");
+            // 성공 시 UI 업데이트
+            isParticipating = false;
+            // 현재 사용자를 목록에서 제거
+            const updatedParticipants = MOCK_PARTICIPANTS.filter(p => p.id !== CURRENT_USER_ID);
+            renderParticipantList(updatedParticipants);
+        }
+    }
+
+
+    // --- (★페이지별★) 로직 실행 ---
+    document.addEventListener('DOMContentLoaded', async () => {
+        const accessToken = localStorage.getItem('accessToken');
+        const matchId = document.querySelector('#match-id-hidden').value; // 숨겨진 필드에서 ID 가져오기
+
+        // 공통 알림 및 인증 로직 실행
+        if (accessToken) {
+            document.getElementById('profile-menu-toggle').style.display = 'block';
+
+            // 로그인/로그아웃 메뉴 상태 설정
+            if (navLoginLink) navLoginLink.parentElement.style.display = 'none';
+            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'list-item';
+
+            // ... (알림 체크 및 배지 업데이트) ...
+        } else {
+            // 비회원 상태일 경우 메뉴 설정
+            if (navLoginLink) navLoginLink.parentElement.style.display = 'list-item';
+            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'none';
+        }
+
+        // ⭐⭐ 보강: 메뉴바의 채팅 링크 클릭 방지 (회원만 허용) ⭐⭐
+        if (navChatLinkElement) {
+            const chatLinkAnchor = navChatLinkElement.querySelector('a');
+            if (chatLinkAnchor && !accessToken) {
+                chatLinkAnchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    alert("❌ 실시간 채팅은 회원만 이용할 수 없습니다.");
+                    window.location.href = '/login';
+                });
+            }
+        }
+
+        // 더미 데이터 초기 렌더링
+        renderParticipantList(MOCK_PARTICIPANTS);
+    });
+</script>
+</body>
+</html>

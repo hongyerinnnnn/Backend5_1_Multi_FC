@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.multi.backend5_1_multi_fc.chat.dao.ChatParticipantDao">
+    <resultMap id="ChatParticipantResultMap" type="ChatParticipantDto">
+        <id property="chatPartId" column="chat_part_id"/>
+        <result property="roomId" column="chat_room_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="joinedAt" column="joined_at"/>
+    </resultMap>
+
+    <select id="findParticipantsByRoomId" parameterType="long" resultMap="ChatParticipantResultMap">
+        select *
+        from Chat_Participant
+        where chat_room_id = #{roomId}
+    </select>
+
+    <insert id="insertParticipant" parameterType="com.multi.backend5_1_multi_fc.chat.dto.ChatParticipantDto" useGeneratedKeys="true" keyProperty="chatPartId">
+        insert into Chat_Participant (chat_room_id, user_id, joined_at)
+        values (#{roomId}, #{userId}, now())
+    </insert>
+
+    <delete id="deleteParticipant" parameterType="long">
+        delete from Chat_Participant
+        where chat_part_id = #{chatPartId}
+    </delete>
+</mapper>
