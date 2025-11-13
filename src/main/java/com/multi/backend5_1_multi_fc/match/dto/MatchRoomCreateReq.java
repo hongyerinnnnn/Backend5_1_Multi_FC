@@ -1,0 +1,14 @@
+package com.multi.backend5_1_multi_fc.match.dto;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter @Setter
+public class MatchRoomCreateReq {
+    private Long stadiumId;
+    private Long hostId;
+    private String matchDate;
+    private String matchTime;
+    private Integer maxPlayers;
+    private String level;
+}
