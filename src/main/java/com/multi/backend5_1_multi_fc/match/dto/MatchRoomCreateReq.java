@@ -3,10 +3,11 @@ package com.multi.backend5_1_multi_fc.match.dto;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter @Setter
+@Getter
+@Setter
 public class MatchRoomCreateReq {
     private Long stadiumId;
-    private Long hostId;
+    private Long hostId;      // 생성자(Host)
     private String matchDate;
     private String matchTime;
     private Integer maxPlayers;

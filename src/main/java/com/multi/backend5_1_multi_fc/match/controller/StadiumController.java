@@ -11,6 +11,7 @@ import java.util.List;
 @RequestMapping("/api/stadiums")
 @RequiredArgsConstructor
 public class StadiumController {
+
     private final StadiumService stadiumService;
 
     @GetMapping("/search")

@@ -218,96 +218,6 @@
 
 <script>
     // =========================
-    //  공통 메뉴 / 인증 로직
-    // =========================
-    const menuToggle = document.getElementById('menu-toggle');
-    const mainMenu = document.getElementById('main-menu');
-    const profileMenuToggle = document.getElementById('profile-menu-toggle');
-    const profileMenu = document.getElementById('profile-menu');
-    const logoutButton = document.getElementById('logout-button');
-    const navNotificationsLink = document.getElementById('nav-notifications-link');
-    const navChatLink = document.getElementById('nav-chat-link');
-    const navLoginLink = document.getElementById('nav-login-link');
-    const navLogoutLink = document.getElementById('nav-logout-link');
-    const badge = document.getElementById('notification-badge');
-
-    if (menuToggle) {
-        menuToggle.addEventListener('click', () => {
-            mainMenu.classList.toggle('show');
-            profileMenu.classList.remove('show');
-        });
-    }
-    if (profileMenuToggle) {
-        profileMenuToggle.addEventListener('click', () => {
-            profileMenu.classList.toggle('show');
-            mainMenu.classList.remove('show');
-        });
-    }
-    document.addEventListener('click', (event) => {
-        if (!mainMenu.contains(event.target) && !menuToggle.contains(event.target) &&
-            !profileMenu.contains(event.target) && !profileMenuToggle.contains(event.target)) {
-            mainMenu.classList.remove('show');
-            profileMenu.classList.remove('show');
-        }
-    });
-    if (logoutButton) {
-        logoutButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('hasReadReviews');
-            localStorage.removeItem('hasReadSchedules');
-            window.location.href = '/login';
-        });
-    }
-    if (navNotificationsLink) {
-        navNotificationsLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.setItem('hasReadReviews', 'true');
-            localStorage.setItem('hasReadSchedules', 'true');
-            window.location.href = '/notifications';
-        });
-    }
-
-    let hasReviewNotif = false;
-    let hasScheduleNotif = false;
-
-    function updateGlobalBadge() {
-        if (hasReviewNotif || hasScheduleNotif) {
-            if (badge) badge.style.display = 'block';
-        } else {
-            if (badge) badge.style.display = 'none';
-        }
-    }
-    async function checkPendingReviews() {
-        if (localStorage.getItem('hasReadReviews') === 'true') {
-            hasReviewNotif = false;
-            return;
-        }
-        try {
-            // TODO: 실제 API 연동 시 서버 호출
-            await new Promise(r => setTimeout(r, 200));
-            const mockReviews = { count: 0 };
-            if (mockReviews.count > 0) hasReviewNotif = true;
-        } catch (error) {
-            console.error("후기 알림 요청 중 오류:", error);
-        }
-    }
-    async function checkUpcomingSchedules() {
-        if (localStorage.getItem('hasReadSchedules') === 'true') {
-            hasScheduleNotif = false;
-            return;
-        }
-        try {
-            // TODO: 실제 API 연동 시 서버 호출
-            await new Promise(r => setTimeout(r, 200));
-            const mockSchedules = [];
-            if (mockSchedules.length > 0) hasScheduleNotif = true;
-        } catch (error) {
-            console.error("일정 요청 중 오류:", error);
-        }
-    }
-
-    // =========================
     //  Kakao 지도 관련 전역
     // =========================
     let kakaoMap = null;
@@ -315,14 +225,6 @@
 
     function initMap(centerLat = 37.5665, centerLng = 126.9780) {
         const mapContainer = document.getElementById('map');
-        if (!mapContainer) return;
-
-        if (!(window.kakao && window.kakao.maps)) {
-            console.warn("Kakao 지도 스크립트가 로드되지 않았습니다.");
-            mapContainer.innerHTML = "지도 로드를 위해 Kakao 지도 JS 키를 설정해주세요.";
-            return;
-        }
-
         const options = {
             center: new kakao.maps.LatLng(centerLat, centerLng),
             level: 5
@@ -331,28 +233,14 @@
     }
 
     function clearMarkers() {
-        if (!kakaoMarkers) return;
         kakaoMarkers.forEach(m => m.setMap(null));
         kakaoMarkers = [];
     }
 
+    // =========================
+    //  🔥 지도 마커 업데이트 (수정됨)
+    // =========================
     function updateMapMarkers(stadiums) {
-        const mapContainer = document.getElementById('map');
-        if (!mapContainer) return;
-
-        if (!(window.kakao && window.kakao.maps)) {
-            // 지도 스크립트가 없으면 그냥 안내 문구만 유지
-            return;
-        }
-
-        if (!kakaoMap) {
-            if (stadiums && stadiums.length > 0) {
-                initMap(stadiums[0].latitude, stadiums[0].longitude);
-            } else {
-                initMap(); // 기본 서울 중심
-            }
-        }
-
         clearMarkers();
 
         if (!stadiums || stadiums.length === 0) return;
@@ -360,22 +248,24 @@
         const bounds = new kakao.maps.LatLngBounds();
 
         stadiums.forEach(s => {
-            if (typeof s.latitude !== 'number' || typeof s.longitude !== 'number') return;
+            // 🚨 위도/경도 검증 강화
+            if (!s.latitude || !s.longitude || s.latitude === 0 || s.longitude === 0) return;
 
             const position = new kakao.maps.LatLng(s.latitude, s.longitude);
-            const marker = new kakao.maps.Marker({
-                position: position
-            });
+            const marker = new kakao.maps.Marker({ position });
+
             marker.setMap(kakaoMap);
             kakaoMarkers.push(marker);
             bounds.extend(position);
         });
 
-        kakaoMap.setBounds(bounds);
+        if (kakaoMarkers.length > 0) {
+            kakaoMap.setBounds(bounds);
+        }
     }
 
     // =========================
-    //  구장 리스트 렌더링
+    //  🔥 구장 리스트 렌더링 (수정됨)
     // =========================
     function renderFieldList(fields) {
         const listContainer = document.getElementById('field-list');
@@ -385,12 +275,17 @@
 
         if (!fields || fields.length === 0) {
             noResults.style.display = 'block';
-            updateMapMarkers([]); // 지도 마커 제거
+            updateMapMarkers([]);
             return;
         }
+
         noResults.style.display = 'none';
 
-        fields.forEach(field => {
+        const validFields = fields.filter(f =>
+            f.latitude && f.longitude && f.latitude !== 0 && f.longitude !== 0
+        );
+
+        validFields.forEach(field => {
             const card = document.createElement('div');
             card.className = 'field-card';
             card.dataset.fieldId = field.stadiumId;
@@ -409,12 +304,11 @@
             listContainer.appendChild(card);
         });
 
-        // 지도 마커 갱신
-        updateMapMarkers(fields);
+        updateMapMarkers(validFields);
     }
 
     // =========================
-    //  백엔드 API 호출
+    //  🔥 검색 API 호출 (수정됨)
     // =========================
     async function fetchStadiums(keyword) {
         const encoded = keyword ? encodeURIComponent(keyword) : '';
@@ -424,9 +318,7 @@
 
         try {
             const res = await fetch(url);
-            if (!res.ok) {
-                throw new Error(`구장 조회 실패: HTTP ${res.status}`);
-            }
+            if (!res.ok) throw new Error(`HTTP 오류: ${res.status}`);
             return await res.json();
         } catch (e) {
             console.error(e);
@@ -435,98 +327,46 @@
         }
     }
 
+    // =========================
+    //  🔥 검색 실행 로직 (수정됨)
+    // =========================
     async function performSearch() {
         const keywordInput = document.getElementById('search-keyword');
         const regionSelect = document.getElementById('filter-region');
+
         const keywordRaw = keywordInput ? keywordInput.value.trim() : '';
         const regionVal = regionSelect ? regionSelect.value : '';
 
-        // 기본은 keyword 기반으로 백엔드 검색
         let keyword = keywordRaw;
 
-        // 선택된 region이 있으면 한글 지역명으로 키워드 강화 (서울/경기/인천)
-        if (regionVal === 'seoul') {
-            keyword = (keyword + ' 서울').trim();
-        } else if (regionVal === 'gyeonggi') {
-            keyword = (keyword + ' 경기').trim();
-        } else if (regionVal === 'incheon') {
-            keyword = (keyword + ' 인천').trim();
-        }
-
-        if (!keyword) {
-            if (!confirm("검색어가 없습니다. 전체 구장을 불러올까요?")) {
-                return;
-            }
-        }
+        if (regionVal === 'seoul') keyword = (keyword + ' 서울').trim();
+        if (regionVal === 'gyeonggi') keyword = (keyword + ' 경기').trim();
+        if (regionVal === 'incheon') keyword = (keyword + ' 인천').trim();
 
         const stadiums = await fetchStadiums(keyword);
         renderFieldList(stadiums);
     }
 
     // =========================
-    //  DOM 로딩 후 초기화
+    //  페이지 로드 시 초기화
     // =========================
     document.addEventListener('DOMContentLoaded', async () => {
-        const accessToken = localStorage.getItem('accessToken');
-        const currentPath = window.location.pathname;
+        initMap();
 
-        // ⭐ 회원 전용 페이지로 유지
-        if (!accessToken) {
-            alert("❌ 회원 전용 페이지입니다.\n로그인 후에 이용하실 수 있습니다.");
-            localStorage.setItem('redirectAfterLogin', currentPath);
-            window.location.href = '/login';
-            return;
-        }
-
-        if (accessToken) {
-            if (profileMenuToggle) profileMenuToggle.style.display = 'block';
-
-            if (navLoginLink) navLoginLink.parentElement.style.display = 'none';
-            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'list-item';
-
-            await checkPendingReviews();
-            await checkUpcomingSchedules();
-            updateGlobalBadge();
-        } else {
-            if (navLoginLink) navLoginLink.parentElement.style.display = 'list-item';
-            if (navLogoutLink) navLogoutLink.parentElement.style.display = 'none';
-        }
-
-        // 실시간 채팅 링크 (비회원 차단)
-        if (navChatLink && !accessToken) {
-            navChatLink.addEventListener('click', function(e) {
-                e.preventDefault();
-                alert("❌ 실시간 채팅은 회원만 이용할 수 있습니다.");
-                window.location.href = '/login';
-            });
-        }
-
-        // 날짜 필터 기본값: 오늘
-        const dateFilter = document.getElementById('filter-date');
-        if (dateFilter) {
-            dateFilter.valueAsDate = new Date();
-        }
-
-        // 검색 버튼 & 엔터키 검색
         const searchBtn = document.getElementById('search-btn');
         const keywordInput = document.getElementById('search-keyword');
 
-        if (searchBtn) {
-            searchBtn.addEventListener('click', performSearch);
-        }
-        if (keywordInput) {
-            keywordInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    performSearch();
-                }
-            });
-        }
+        if (searchBtn) searchBtn.addEventListener('click', performSearch);
+        if (keywordInput) keywordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
 
-        // ✅ 페이지 첫 로드 시: 전체 구장 리스트 불러오기 (/api/stadiums)
+        // 초기 전체 구장 불러오기
         const initialStadiums = await fetchStadiums('');
         renderFieldList(initialStadiums);
     });
 </script>
+
 
 </body>
 </html>

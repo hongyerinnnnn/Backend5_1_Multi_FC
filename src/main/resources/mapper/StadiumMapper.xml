@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.multi.backend5_1_multi_fc.match.mapper.StadiumMapper">
 
     <resultMap id="stadiumMap" type="com.multi.backend5_1_multi_fc.match.dto.StadiumSummaryRes">
@@ -12,10 +12,11 @@
     </resultMap>
 
     <select id="findAll" resultMap="stadiumMap">
-        SELECT * FROM Stadium ORDER BY stadium_id DESC
+        SELECT *
+        FROM Stadium
+        ORDER BY stadium_id DESC
     </select>
 
-    <!-- ⭐ Stadium 엔티티 기준으로 PK 자동 생성 -->
     <insert id="insertFromKakao"
             parameterType="com.multi.backend5_1_multi_fc.match.domain.Stadium"
             useGeneratedKeys="true"
@@ -25,7 +26,9 @@
     </insert>
 
     <select id="countByName" resultType="int">
-        SELECT COUNT(*) FROM Stadium WHERE name = #{name}
+        SELECT COUNT(*)
+        FROM Stadium
+        WHERE name = #{name}
     </select>
 
 </mapper>

@@ -3,7 +3,8 @@ package com.multi.backend5_1_multi_fc.match.dto;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter @Setter
+@Getter
+@Setter
 public class JoinReq {
     private Long userId;
 }
