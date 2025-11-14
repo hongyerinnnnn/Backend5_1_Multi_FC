@@ -32,4 +32,10 @@
         WHERE stadium_id = #{stadiumId}
     </select>
 
+    <select id="findById" resultMap="roomMap">
+        SELECT *
+        FROM Match_Room
+        WHERE room_id = #{roomId}
+    </select>
+
 </mapper>

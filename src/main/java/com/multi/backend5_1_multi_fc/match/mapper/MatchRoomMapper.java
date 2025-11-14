@@ -8,7 +8,13 @@ import java.util.List;
 
 @Mapper
 public interface MatchRoomMapper {
+
     void insert(MatchRoomCreateReq req);
+
     MatchRoomDto findLatest();
+
     List<MatchRoomDto> findByStadium(Long stadiumId);
+
+    MatchRoomDto findById(Long roomId);
 }
+

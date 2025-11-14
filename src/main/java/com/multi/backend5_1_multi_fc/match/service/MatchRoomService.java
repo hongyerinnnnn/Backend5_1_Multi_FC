@@ -9,27 +9,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class MatchRoomService {
 
     private final MatchRoomMapper matchRoomMapper;
-    private final MatchEventPublisher eventPublisher;
 
     @Transactional
     public MatchRoomDto create(MatchRoomCreateReq req) {
-
         matchRoomMapper.insert(req);
-        MatchRoomDto created = matchRoomMapper.findLatest();
+        return matchRoomMapper.findLatest();
+    }
 
-        // stadiumId 기반 방송 (프론트 WebSocket 경로와 일치)
-        eventPublisher.publishNewMatchForStadium(
-                req.getStadiumId(),
-                created
-        );
-
-        return created;
+    public MatchRoomDto findById(Long roomId) {
+        return matchRoomMapper.findById(roomId);
     }
 
     public List<MatchRoomDto> findByStadium(Long stadiumId) {

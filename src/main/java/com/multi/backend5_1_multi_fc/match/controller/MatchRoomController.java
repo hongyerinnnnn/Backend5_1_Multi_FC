@@ -15,6 +15,11 @@ public class MatchRoomController {
 
     private final MatchRoomService matchRoomService;
 
+    @GetMapping("/{roomId}")
+    public MatchRoomDto getMatchById(@PathVariable Long roomId) {
+        return matchRoomService.findById(roomId);
+    }
+
     @PostMapping
     public MatchRoomDto createMatch(@RequestBody MatchRoomCreateReq req) {
         return matchRoomService.create(req);
