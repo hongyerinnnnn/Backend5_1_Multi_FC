@@ -13,6 +13,10 @@
     <!-- Kakao Map -->
     <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=4caaf2cb0e09303d4dd13d3fb5ff15e9&libraries=services"></script>
 
+    <!-- WebSocket: SockJS + STOMP -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
     <style>
         .schedule-main { padding: 100px 40px; background: #f7f7f7; min-height: 100vh; }
         .container { max-width: 1100px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 15px;
@@ -99,9 +103,9 @@
 </main>
 
 <script>
-    /* ==========================================
-       1) Kakao Map
-     ========================================== */
+    let stompClient = null;
+
+    /* Kakao Map */
     function loadMap(lat, lng) {
         const mapContainer = document.getElementById('map');
         const center = new kakao.maps.LatLng(lat, lng);
@@ -109,30 +113,74 @@
         new kakao.maps.Marker({ position: center, map: map });
     }
 
-    /* ==========================================
-       2) API 호출
-     ========================================== */
+    /* API 호출 */
     async function loadMatchDetail(matchId) {
         const res = await fetch(`/api/matchrooms/${matchId}`);
+        if (!res.ok) throw new Error("match 조회 실패");
         return res.json();
     }
 
     async function loadStadiumDetail(stadiumId) {
         const res = await fetch(`/api/stadiums`);
+        if (!res.ok) throw new Error("stadiums 조회 실패");
         const list = await res.json();
         return list.find(s => s.stadiumId == stadiumId);
     }
 
     async function loadParticipants(matchId) {
         const res = await fetch(`/api/matchrooms/${matchId}/participants`);
-        return res.json(); // [1,14,22] 형식
+        if (!res.ok) throw new Error("participants 조회 실패");
+        return res.json(); // [userId...]
     }
 
-    /* ==========================================
-       3) 화면에 매핑
-     ========================================== */
+    /* 참여자 렌더링 */
+    function renderParticipants(participants, maxPlayers) {
+        const list = document.getElementById("participant-list");
+        const currentEl = document.getElementById("current-players");
+        const maxEl = document.getElementById("max-players-count");
+
+        list.innerHTML = "";
+
+        participants.forEach(uid => {
+            const li = document.createElement("li");
+            li.textContent = `참여자 ID: ${uid}`;
+            list.appendChild(li);
+        });
+
+        currentEl.textContent = participants.length;
+        maxEl.textContent = maxPlayers;
+    }
+
+    async function refreshParticipants(matchId, maxPlayers) {
+        const participants = await loadParticipants(matchId);
+        renderParticipants(participants, maxPlayers);
+    }
+
+    /* WebSocket 연결 */
+    function connectParticipantWebSocket(matchId, maxPlayers) {
+        const socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, () => {
+            console.log("WS connected");
+
+            stompClient.subscribe(`/topic/matchroom/${matchId}/participants`, (message) => {
+                const event = JSON.parse(message.body);
+                console.log("participant event:", event);
+                // 이벤트 받을 때마다 목록 새로고침
+                refreshParticipants(matchId, maxPlayers);
+            });
+        }, err => {
+            console.error("WS error", err);
+        });
+    }
+
     async function init() {
         const matchId = document.getElementById("match-id").value;
+        if (!matchId) {
+            console.error("matchId 없음");
+            return;
+        }
 
         // 1) 경기 데이터
         const match = await loadMatchDetail(matchId);
@@ -145,43 +193,41 @@
 
         // 2) 구장 데이터
         const stadium = await loadStadiumDetail(match.stadiumId);
+        if (stadium) {
+            document.getElementById("stadium-name").textContent = stadium.name;
+            loadMap(stadium.latitude, stadium.longitude);
+        } else {
+            document.getElementById("stadium-name").textContent = "구장 정보 없음";
+        }
 
-        document.getElementById("stadium-name").textContent = stadium.name;
+        // 3) 초기 참여자 목록
+        await refreshParticipants(matchId, match.maxPlayers);
 
-        // 지도 표시
-        loadMap(stadium.latitude, stadium.longitude);
+        // 4) WebSocket 연결
+        connectParticipantWebSocket(matchId, match.maxPlayers);
 
-        // 3) 참여자 목록
-        const participants = await loadParticipants(matchId);
-
-        const list = document.getElementById("participant-list");
-        list.innerHTML = "";
-
-        participants.forEach(uid => {
-            const li = document.createElement("li");
-            li.textContent = `참여자 ID: ${uid}`;
-            list.appendChild(li);
-        });
-
-        document.getElementById("current-players").textContent = participants.length;
-
-        // 4) 참여 버튼 이벤트 설정
+        // 5) 참여하기 버튼
         document.getElementById("join-btn").onclick = async () => {
             const userId = Number(localStorage.getItem("userId") || 0);
-
             if (!userId) {
                 alert("로그인이 필요합니다.");
                 return window.location.href = "/login";
             }
 
-            await fetch(`/api/matchrooms/${matchId}/join`, {
+            const res = await fetch(`/api/matchrooms/${matchId}/join`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({userId})
             });
 
+            if (!res.ok) {
+                alert("참여 실패");
+                return;
+            }
+
             alert("참여되었습니다!");
-            init(); // 화면 갱신
+            // 이 클라이언트도 WS를 구독하고 있어서
+            // 서버에서 broadcast한 event를 받아서 목록이 자동 갱신됨
         };
     }
 

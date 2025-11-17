@@ -1,3 +1,4 @@
+// Kakao Maps API로 장소 검색 서비스
 package com.multi.backend5_1_multi_fc.match.service;
 
 import com.multi.backend5_1_multi_fc.match.dto.KakaoPlaceRes;

@@ -1,3 +1,4 @@
+// 경기장 검색 및 DB 저장 REST API
 package com.multi.backend5_1_multi_fc.match.controller;
 
 import com.multi.backend5_1_multi_fc.match.dto.StadiumSummaryRes;

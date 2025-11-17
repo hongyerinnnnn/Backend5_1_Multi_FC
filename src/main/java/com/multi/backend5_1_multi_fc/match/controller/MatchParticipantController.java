@@ -1,3 +1,4 @@
+// 경기 참가/취소/참가자 조회 REST API
 package com.multi.backend5_1_multi_fc.match.controller;
 
 import com.multi.backend5_1_multi_fc.match.dto.JoinReq;
@@ -14,13 +15,19 @@ public class MatchParticipantController {
 
     private final MatchParticipantService participantService;
 
-    /** 🔥 참가자가 특정 경기방 참여 */
+    /** 참가 */
     @PostMapping("/{roomId}/join")
     public void join(@PathVariable Long roomId, @RequestBody JoinReq req) {
         participantService.join(roomId, req.getUserId());
     }
 
-    /** 🔥 특정 경기방의 기존 참여자 목록 조회 */
+    /** 참가 취소 (원하면 사용) */
+    @PostMapping("/{roomId}/cancel")
+    public void cancel(@PathVariable Long roomId, @RequestBody JoinReq req) {
+        participantService.cancel(roomId, req.getUserId());
+    }
+
+    /** 참가자 목록 */
     @GetMapping("/{roomId}/participants")
     public List<Long> getParticipants(@PathVariable Long roomId) {
         return participantService.getParticipants(roomId);

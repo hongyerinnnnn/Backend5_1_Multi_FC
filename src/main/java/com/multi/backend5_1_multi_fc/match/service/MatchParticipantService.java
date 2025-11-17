@@ -1,3 +1,4 @@
+// 경기 참가/취소 비즈니스 로직
 package com.multi.backend5_1_multi_fc.match.service;
 
 import com.multi.backend5_1_multi_fc.match.mapper.MatchParticipantMapper;
@@ -14,20 +15,27 @@ public class MatchParticipantService {
     private final MatchParticipantMapper participantMapper;
     private final MatchEventPublisher eventPublisher;
 
-    /** 🔥 경기방 참여 + WebSocket 방송 */
+    /** 참가 */
     @Transactional
     public void join(Long roomId, Long userId) {
-
         if (participantMapper.existsByRoomAndUser(roomId, userId) == 0) {
-
             participantMapper.insert(roomId, userId);
-
-            // 실시간 참가자 방송
-            eventPublisher.publishNewParticipant(roomId, userId);
+            int currentCount = participantMapper.countByRoom(roomId);
+            eventPublisher.publishParticipantEvent(roomId, userId, "JOIN", currentCount);
         }
     }
 
-    /** 🔥 특정 경기방 기존 참여자 목록 조회 */
+    /** 참가 취소 */
+    @Transactional
+    public void cancel(Long roomId, Long userId) {
+        if (participantMapper.existsByRoomAndUser(roomId, userId) > 0) {
+            participantMapper.delete(roomId, userId);
+            int currentCount = participantMapper.countByRoom(roomId);
+            eventPublisher.publishParticipantEvent(roomId, userId, "LEAVE", currentCount);
+        }
+    }
+
+    /** 현재 참여자 목록 */
     public List<Long> getParticipants(Long roomId) {
         return participantMapper.findUserIdsByRoom(roomId);
     }

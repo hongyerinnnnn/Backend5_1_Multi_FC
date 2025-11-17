@@ -1,3 +1,4 @@
+// STOMP Websocket 엔드포인트 및 브로커 설정
 package com.multi.backend5_1_multi_fc.match.config;
 
 import org.springframework.context.annotation.Configuration;
@@ -10,14 +11,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // 구독(prefix: /topic)
+        // 구독 prefix
         config.enableSimpleBroker("/topic");
-        // 클라이언트에서 메시지 보낼 때 prefix: /app
+        // 클라이언트에서 send 시 prefix
         config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // 클라이언트에서 연결할 endpoint: /ws
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();

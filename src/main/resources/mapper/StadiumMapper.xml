@@ -31,4 +31,12 @@
         WHERE name = #{name}
     </select>
 
+    <!-- 🔥 동일 이름이 이미 존재할 경우 DB에서 stadiumId 포함 전체 조회 -->
+    <select id="findByName" resultType="com.multi.backend5_1_multi_fc.match.domain.Stadium">
+        SELECT stadium_id, name, address, latitude, longitude
+        FROM Stadium
+        WHERE name = #{name}
+            LIMIT 1
+    </select>
+
 </mapper>

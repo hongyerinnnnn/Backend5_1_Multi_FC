@@ -11,4 +11,5 @@ public interface StadiumMapper {
     List<StadiumSummaryRes> findAll();
     void insertFromKakao(Stadium stadium);
     int countByName(String name);
+    Stadium findByName(String name);   // 🔥 추가됨
 }

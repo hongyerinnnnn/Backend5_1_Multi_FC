@@ -1,3 +1,4 @@
+// Spring Security 설정
 package com.multi.backend5_1_multi_fc.match.config;
 
 import org.springframework.context.annotation.Bean;

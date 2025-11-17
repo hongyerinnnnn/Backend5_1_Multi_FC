@@ -756,7 +756,13 @@
     }
 
     async function submitMatchForm() {
-        const stadiumId = new URLSearchParams(window.location.search).get('id');
+        let stadiumId = new URLSearchParams(window.location.search).get('id');
+
+        if (!stadiumId || stadiumId === "null") {
+            const parts = window.location.pathname.split("/");
+            stadiumId = parts[parts.length - 1];
+        }
+
         const matchDate = document.getElementById('matchDate').value;
         const startTime = document.getElementById('startTime').value;
         const endTime = document.getElementById('endTime').value;

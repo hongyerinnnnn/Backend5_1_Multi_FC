@@ -1,3 +1,4 @@
+// 경기방 생성/조회 REST API
 package com.multi.backend5_1_multi_fc.match.controller;
 
 import com.multi.backend5_1_multi_fc.match.dto.MatchRoomCreateReq;
