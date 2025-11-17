@@ -24,14 +24,6 @@ repositories {
     mavenCentral()
 }
 
-processResources{
-    filesMatching('application.properties'){
-        expand(
-                dbPassword: project.hasProperty('dbPassword') ? project.getProperty('dbPassword') : ''
-        )
-    }
-}
-
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
@@ -58,6 +50,11 @@ dependencies {
 
     //MAIL
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    //JWT 라이브러리 (jwt)
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 }
 
 tasks.named('test') {
