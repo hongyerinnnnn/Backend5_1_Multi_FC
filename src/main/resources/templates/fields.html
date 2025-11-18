@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MULTI FC - 구장 검색</title>
+
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Kakao 지도 -->
+    <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=4caaf2cb0e09303d4dd13d3fb5ff15e9&libraries=services"></script>
+
+    <style>
+        /* ----- 기존 CSS 그대로 (생략 없음) ----- */
+        .field-search-main {
+            padding: 100px 40px 40px 40px;
+            background-color: #f7f7f7;
+            min-height: 100vh;
+        }
+        .search-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .search-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #6c5ce7;
+            padding-bottom: 10px;
+        }
+        .filter-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .filter-section input,
+        .filter-section select,
+        .filter-section button {
+            padding: 12px 15px;
+            font-size: 15px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+        .filter-section input[type="text"] {
+            flex-grow: 1;
+            min-width: 200px;
+        }
+        .filter-section input[type="date"] {
+            width: 150px;
+            text-align: center;
+        }
+        .filter-section button {
+            background-color: #6c5ce7;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+
+        .search-content {
+            display: flex;
+            gap: 20px;
+        }
+        .map-area {
+            flex: 7;
+            height: 500px;
+            background-color: #eee;
+            border-radius: 10px;
+        }
+        .field-list-area {
+            flex: 3;
+            max-height: 500px;
+            overflow-y: auto;
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        #field-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .field-card {
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            padding: 10px 12px;
+            border-left: 5px solid #2ecc71;
+            cursor: pointer;
+        }
+        .field-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+        }
+        .field-card h3 {
+            font-size: 16px;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="quick-menu">
+    <div class="logo"><a href="/">MULTI FC</a></div>
+    <div class="header-icons">
+        <button id="profile-menu-toggle" class="profile-icon" style="position: relative; display: none;">
+            <i class="fas fa-user-circle"></i>
+        </button>
+        <button id="menu-toggle" class="menu-toggle-btn"><i class="fas fa-bars"></i></button>
+    </div>
+</header>
+
+<main class="field-search-main">
+    <div class="search-container">
+        <h1 class="search-title">🔎 구장 검색</h1>
+
+        <div class="filter-section">
+            <input type="text" id="search-keyword" placeholder="구장 이름 또는 지역 입력 (예: 강남)">
+            <button id="search-btn">검색</button>
+        </div>
+
+        <div class="search-content">
+            <div class="map-area" id="map">( KakaoMap API 표시 )</div>
+
+            <div class="field-list-area">
+                <h2 style="font-size:22px;">검색 결과</h2>
+                <div id="field-list"></div>
+                <p id="no-results-message" style="display:none; color:#777;">검색 결과가 없습니다.</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    /* ================================
+       Kakao Map
+    ================================ */
+    let kakaoMap = null;
+    let kakaoMarkers = [];
+
+    function initMap(lat = 37.5665, lng = 126.9780) {
+        kakaoMap = new kakao.maps.Map(document.getElementById('map'), {
+            center: new kakao.maps.LatLng(lat, lng),
+            level: 5
+        });
+    }
+
+    function clearMarkers() {
+        kakaoMarkers.forEach(m => m.setMap(null));
+        kakaoMarkers = [];
+    }
+
+    function updateMapMarkers(list) {
+        clearMarkers();
+        if (!list || list.length === 0) return;
+
+        const bounds = new kakao.maps.LatLngBounds();
+
+        list.forEach(s => {
+            if (!s.latitude || !s.longitude) return;
+            const pos = new kakao.maps.LatLng(s.latitude, s.longitude);
+
+            const marker = new kakao.maps.Marker({ position: pos });
+            marker.setMap(kakaoMap);
+
+            kakaoMarkers.push(marker);
+            bounds.extend(pos);
+        });
+
+        if (kakaoMarkers.length > 0) {
+            kakaoMap.setBounds(bounds);
+        }
+    }
+
+    /* ================================
+       구장 렌더링 (여기만 수정됨!)
+    ================================ */
+    function renderFieldList(fields) {
+        const list = document.getElementById("field-list");
+        const noMsg = document.getElementById("no-results-message");
+
+        list.innerHTML = "";
+
+        if (!fields || fields.length === 0) {
+            noMsg.style.display = "block";
+            updateMapMarkers([]);
+            return;
+        }
+        noMsg.style.display = "none";
+
+        fields.forEach(field => {
+            const card = document.createElement("div");
+            card.className = "field-card";
+
+            card.innerHTML = `
+            <h3>${field.name}</h3>
+            <div class="field-meta">
+                <p><i class="fas fa-map-marker-alt"></i> ${field.address}</p>
+            </div>
+        `;
+
+            // ⭐⭐⭐ 문제 해결된 부분 ⭐⭐⭐
+            card.addEventListener('click', () => {
+                const id =
+                    field.stadiumId ||
+                    field.id ||
+                    field.stadium_id ||
+                    field.stadiumID;
+
+                if (!id) {
+                    alert("구장 ID가 없어 상세 화면으로 이동할 수 없습니다.");
+                    console.error("❌ stadium 데이터:", field);
+                    return;
+                }
+
+                location.href = `/stadium/detail?id=${id}`;
+            });
+
+            list.appendChild(card);
+        });
+
+        updateMapMarkers(fields);
+    }
+
+    /* ================================
+       검색 API 호출
+    ================================ */
+    async function fetchStadiums(keyword) {
+        const encoded = encodeURIComponent(keyword || '');
+        const url = keyword ? `/api/stadiums/search?keyword=${encoded}` : `/api/stadiums`;
+
+        try {
+            const res = await fetch(url);
+            return await res.json();
+        } catch (err) {
+            console.error(err);
+            alert("구장 검색 중 오류 발생");
+            return [];
+        }
+    }
+
+    /* ================================
+       검색 실행
+    ================================ */
+    async function performSearch() {
+        const keyword = document.getElementById("search-keyword").value.trim();
+        const stadiums = await fetchStadiums(keyword);
+        renderFieldList(stadiums);
+    }
+
+    /* ================================
+       초기 로드
+    ================================ */
+    document.addEventListener("DOMContentLoaded", async () => {
+        initMap();
+
+        document.getElementById("search-btn").addEventListener("click", performSearch);
+
+        const list = await fetchStadiums("");
+        renderFieldList(list);
+    });
+</script>
+
+</body>
+</html>
