@@ -14,16 +14,17 @@ import java.util.List;
 public class MatchRoomService {
 
     private final MatchRoomMapper matchRoomMapper;
+    private final MatchEventPublisher eventPublisher; // ✅ 이벤트 발행기 주입
 
-    /** 경기방 생성 */
     @Transactional
     public MatchRoomDto create(MatchRoomCreateReq req) {
-
-        // insert 시 자동 생성된 roomId가 req.roomId 에 채워짐
         matchRoomMapper.insert(req);
+        MatchRoomDto newRoom = matchRoomMapper.findById(req.getRoomId());
 
-        // 방금 생성한 roomId 로 다시 조회
-        return matchRoomMapper.findById(req.getRoomId());
+        // ✅ [추가] 실시간 경기 생성 알림 전송
+        eventPublisher.publishNewMatchForStadium(newRoom.getStadiumId(), newRoom);
+
+        return newRoom;
     }
 
     public MatchRoomDto findById(Long roomId) {

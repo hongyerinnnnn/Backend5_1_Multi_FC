@@ -9,7 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
     <style>
+        /* (기존 스타일 유지) */
         .schedule-search-main {
             padding: 100px 40px 40px 40px;
             background-color: #f7f7f7;
@@ -31,8 +35,6 @@
             border-bottom: 2px solid #6c5ce7;
             padding-bottom: 10px;
         }
-
-        /* (★) 상세 페이지 전용 스타일 */
         .detail-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -40,10 +42,9 @@
         }
         @media (min-width: 768px) {
             .detail-grid {
-                grid-template-columns: 1fr 350px; /* 넓은 화면에서 2열 */
+                grid-template-columns: 1fr 350px;
             }
         }
-
         .map-area {
             width: 100%;
             height: 300px;
@@ -86,7 +87,6 @@
             padding: 0;
             margin: 10px 0 20px 0;
         }
-        /* ⭐⭐ 참여자 목록 상세 스타일 (ERD 반영) ⭐⭐ */
         .participant-list li {
             padding: 8px 0;
             color: #555;
@@ -115,14 +115,12 @@
             color: #999;
             margin-top: 3px;
         }
-        /* ⭐⭐ 참여자 목록 상세 스타일 끝 ⭐⭐ */
-
         .join-button {
             width: 100%;
             padding: 14px;
         }
         .btn-cancel {
-            background-color: #e74c3c; /* 취소는 빨간색 */
+            background-color: #e74c3c;
         }
     </style>
 </head>
@@ -167,42 +165,38 @@
         <input type="hidden" id="match-id-hidden" th:value="${matchId}">
 
         <div class="detail-grid">
-
             <div class="detail-left-column">
                 <div class="map-area" id="map">(KakaoMap API가 표시될 영역)</div>
 
                 <h3>경기 정보</h3>
                 <div class="detail-info-item">
                     <i class="fas fa-calendar-alt"></i>
-                    <span id="detail-datetime">2025-11-01 (토) 19:00</span>
+                    <span id="detail-datetime">로딩중...</span>
                 </div>
                 <div class="detail-info-item">
                     <i class="fas fa-map-marker-alt"></i>
-                    <span id="detail-location">서울 강남 풋살장</span>
+                    <span id="detail-location">로딩중...</span>
                 </div>
                 <div class="detail-info-item">
                     <i class="fas fa-users"></i>
-                    <span id="detail-match-type">개인 매칭 (10명 모집)</span>
+                    <span id="detail-match-type">로딩중...</span>
                 </div>
                 <div class="detail-info-item">
                     <i class="fas fa-medal"></i>
-                    <span id="detail-skill-level">중급 레벨 (3.0 이상)</span>
-                </div>
-                <div class="detail-info-item">
-                    <i class="fas fa-info-circle"></i>
-                    <span id="detail-info">초급자 환영! 즐겁게 찰 분들 오세요.</span>
+                    <span id="detail-skill-level">로딩중...</span>
                 </div>
             </div>
 
             <div class="detail-right-column">
                 <div class="status-card">
                     <h3>참여 현황</h3>
-                    <strong><span id="current-players">4</span> / <span id="max-players">10</span> 명</strong>
+                    <strong><span id="current-players">0</span> / <span id="max-players">0</span> 명</strong>
                     <ul class="participant-list" id="participant-list">
                     </ul>
 
-                    <button id="join-match-btn" class="login-button join-button" style="display:none;" onclick="handleJoin()">참여하기</button>
-                    <button id="cancel-match-btn" class="login-button join-button btn-cancel" style="display:none;" onclick="handleCancel()">참여 취소</button>
+                    <button id="join-match-btn" class="login-button join-button" style="display:none;">참여하기</button>
+                    <button id="cancel-match-btn" class="login-button join-button btn-cancel" style="display:none;">참여 취소</button>
+                    <button id="host-msg-btn" class="login-button join-button" style="display:none; background-color: #555; cursor:default;">내가 주최한 경기</button>
 
                     <p id="login-prompt-msg" style="display:none; text-align: center; margin-top: 15px; font-size: 14px;">
                         참여하려면 <a href="/login" style="color: #6c5ce7; font-weight: 600;">로그인</a>이 필요합니다.
@@ -214,17 +208,19 @@
 </main>
 
 <script>
-    // --- (★공통★) 메뉴 토글 로직 (유지) ---
+    /* =========================================================
+       1. 공통 메뉴 및 인증 로직
+    ========================================================= */
     const menuToggle = document.getElementById('menu-toggle');
     const mainMenu = document.getElementById('main-menu');
     const profileMenuToggle = document.getElementById('profile-menu-toggle');
     const profileMenu = document.getElementById('profile-menu');
     const logoutButton = document.getElementById('logout-button');
     const navNotificationsLink = document.getElementById('nav-notifications-link');
-    const navChatLinkElement = document.getElementById('nav-chat-link-li');
     const navLoginLink = document.getElementById('nav-login-link');
     const navLogoutLink = document.getElementById('nav-logout-link');
 
+    // 메뉴 토글
     if (menuToggle) {
         menuToggle.addEventListener('click', () => {
             mainMenu.classList.toggle('show');
@@ -244,173 +240,221 @@
             profileMenu.classList.remove('show');
         }
     });
+
+    // 로그아웃
     if (logoutButton) {
-        logoutButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('hasReadReviews');
-            localStorage.removeItem('hasReadSchedules');
-            window.location.href = '/login';
-        });
-    }
-    if (navNotificationsLink) {
-        navNotificationsLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.setItem('hasReadReviews', 'true');
-            localStorage.setItem('hasReadSchedules', 'true');
-            window.location.href = '/notifications';
-        });
+        logoutButton.addEventListener('click', handleLogout);
     }
     if (navLogoutLink) {
-        navLogoutLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('hasReadReviews');
-            localStorage.removeItem('hasReadSchedules');
-            window.location.href = '/login';
-        });
+        navLogoutLink.addEventListener('click', handleLogout);
     }
-    // --- (★공통★) 메뉴 토글 로직 끝 ---
+    function handleLogout(e) {
+        e.preventDefault();
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userNickname');
+        window.location.href = '/login';
+    }
 
+    /* =========================================================
+       2. 경기 상세 페이지 핵심 로직 (실시간 연동)
+    ========================================================= */
+    let stompClient = null;
+    let currentMatchData = null;
+    let currentUserId = null;
+    const matchId = document.getElementById('match-id-hidden').value;
 
-    // ⭐⭐ 매너 점수 제거: 더미 참여자 데이터 수정 ⭐⭐
-    // mannerScore 필드 제거
-    const MOCK_PARTICIPANTS = [
-        { id: 101, username: 'captain_son', nickname: '캡틴손', position: 'MF', role: 'Host' },
-        { id: 102, username: 'closer_kim', nickname: '구원투수', position: 'DF', role: 'Player' },
-        { id: 103, username: 'shootdori', nickname: '슛돌이', position: 'FW', role: 'Player' },
-        { id: 104, username: 'keeper_k', nickname: '골키퍼K', position: 'GK', role: 'Player' },
-        // 현재 사용자 (참여 상태 시뮬레이션)
-        { id: 999, username: 'my_user_id', nickname: '나의닉네임', position: 'ALA', role: 'Player' }
-    ];
+    // (1) 경기 기본 정보 로드
+    async function fetchMatchDetail() {
+        try {
+            const res = await fetch(`/api/matchrooms/${matchId}`);
+            if (!res.ok) throw new Error('경기 정보를 불러오지 못했습니다.');
 
-    const CURRENT_USER_ID = 999;
-    let isParticipating = false;
+            currentMatchData = await res.json();
 
-    // ⭐⭐ 매너 점수 제거: 참여자 목록 렌더링 함수 수정 ⭐⭐
+            // 화면 업데이트
+            document.getElementById('detail-datetime').textContent = `${currentMatchData.matchDate} ${currentMatchData.matchTime}`;
+            document.getElementById('detail-location').textContent = `구장 ID: ${currentMatchData.stadiumId}`;
+            document.getElementById('detail-match-type').textContent = `개인 매칭 (${currentMatchData.maxPlayers}명 모집)`;
+            document.getElementById('detail-skill-level').textContent = `${currentMatchData.level} (${currentMatchData.status})`;
+            document.getElementById('max-players').textContent = currentMatchData.maxPlayers;
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    // (2) 참가자 목록 로드 (실제 API 호출)
+    async function fetchParticipantList() {
+        try {
+            // 수정된 API (DTO 반환) 호출
+            const res = await fetch(`/api/matchrooms/${matchId}/participants/all`);
+            if (!res.ok) throw new Error('참가자 목록 로드 실패');
+
+            const participants = await res.json(); // ParticipantDto 리스트
+            renderParticipantList(participants);
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    // (3) 참가자 목록 화면 그리기
     function renderParticipantList(participants) {
         const listEl = document.getElementById('participant-list');
-        const currentPlayersEl = document.getElementById('current-players');
-        const maxPlayersEl = document.getElementById('max-players');
         listEl.innerHTML = '';
 
-        // 현재 사용자 참여 상태 초기화 및 확인
-        isParticipating = participants.some(user => user.id === CURRENT_USER_ID);
+        const currentPlayersEl = document.getElementById('current-players');
+
+        // 참가자(Player) 수만 카운트 (Host 제외)
+        const playerCount = participants.filter(p => p.role === 'Player').length;
+        currentPlayersEl.textContent = playerCount;
 
         participants.forEach(user => {
             const listItem = document.createElement('li');
             const roleBadge = user.role === 'Host' ? `<span class="role-badge">주최자</span>` : '';
 
-            const nicknameDisplay = user.id === CURRENT_USER_ID ? `${user.nickname} (나)` : `${user.nickname}`;
-            const userIdDisplay = user.username ? ` (${user.username})` : '';
+            let nicknameDisplay = user.nickname;
+            if (Number(user.userId) === currentUserId) {
+                nicknameDisplay = `${user.nickname} (나)`;
+            }
 
             listItem.innerHTML = `
                 <div class="user-info">
-                    <span>${nicknameDisplay}${userIdDisplay}</span>
+                    <span>${nicknameDisplay}</span>
                     ${roleBadge}
                 </div>
                 <div class="detail-info">
-                    포지션: ${user.position}
-                    </div>
+                    포지션: ${user.position || '미정'}
+                </div>
             `;
             listEl.appendChild(listItem);
         });
 
-        // 인원 수 업데이트
-        currentPlayersEl.textContent = participants.length;
-        maxPlayersEl.textContent = '10'; // 더미 최대 인원
-
-        updateJoinButtonState();
+        // 버튼 상태 갱신
+        updateButtonState(participants);
     }
 
-    // ⭐⭐ 버튼 상태 업데이트 함수 (이전 로직 유지) ⭐⭐
-    function updateJoinButtonState() {
+    // (4) 버튼 상태 관리 (참여/취소/주최자 표시)
+    function updateButtonState(participants) {
         const joinBtn = document.getElementById('join-match-btn');
         const cancelBtn = document.getElementById('cancel-match-btn');
+        const hostMsgBtn = document.getElementById('host-msg-btn');
         const loginPrompt = document.getElementById('login-prompt-msg');
 
-        const isLoggedIn = localStorage.getItem('accessToken') !== null;
+        joinBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+        hostMsgBtn.style.display = 'none';
+        loginPrompt.style.display = 'none';
 
-        if (!isLoggedIn) {
-            joinBtn.style.display = 'none';
-            cancelBtn.style.display = 'none';
+        if (!currentUserId) {
             loginPrompt.style.display = 'block';
             return;
         }
 
-        loginPrompt.style.display = 'none';
-
-        if (isParticipating) {
-            joinBtn.style.display = 'none';
-            cancelBtn.style.display = 'block';
+        if (currentMatchData && Number(currentMatchData.hostId) === currentUserId) {
+            hostMsgBtn.style.display = 'block'; // 내가 방장
         } else {
-            joinBtn.style.display = 'block';
-            cancelBtn.style.display = 'none';
+            // 내가 참가자인지 확인
+            const isJoined = participants.some(p => Number(p.userId) === currentUserId);
+
+            if (isJoined) {
+                cancelBtn.style.display = 'block';
+            } else {
+                // 정원 마감 여부 체크
+                const currentCount = participants.filter(p => p.role === 'Player').length;
+                if (currentMatchData && currentCount < currentMatchData.maxPlayers) {
+                    joinBtn.style.display = 'block';
+                } else {
+                    joinBtn.innerText = "모집 마감";
+                    joinBtn.style.display = 'block';
+                    joinBtn.disabled = true;
+                    joinBtn.style.backgroundColor = "#ccc";
+                }
+            }
         }
     }
 
-    // ⭐⭐ 매치 참가 로직 (API 호출 시뮬레이션) ⭐⭐
-    function handleJoin() {
-        if (confirm("정말로 이 경기에 참여하시겠습니까?")) {
-            // ⭐ 백엔드 API 호출: POST /api/match/join/{matchId}
-            alert("참여 요청이 완료되었습니다. (시뮬레이션)");
-            // 성공 시 UI 업데이트 (mannerScore 필드 없음)
-            isParticipating = true;
-            const newUser = { id: CURRENT_USER_ID, username: 'my_user_id', nickname: '나의닉네임', position: 'ALA', role: 'Player' };
-            MOCK_PARTICIPANTS.push(newUser);
-            renderParticipantList(MOCK_PARTICIPANTS);
+    // (5) 참가 요청
+    async function handleJoin() {
+        if (!currentUserId) return alert("로그인이 필요합니다.");
+        if (!confirm("참가하시겠습니까?")) return;
+
+        try {
+            const res = await fetch(`/api/matchrooms/${matchId}/join`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUserId })
+            });
+            if (!res.ok) throw new Error('참가 실패');
+            // 성공 시 WebSocket이 자동 갱신하므로 별도 처리 불필요
+        } catch (err) {
+            alert(err.message);
         }
     }
 
-    // ⭐⭐ 매치 참가 취소 로직 (API 호출 시뮬레이션) ⭐⭐
-    function handleCancel() {
-        if (confirm("정말로 참여를 취소하시겠습니까?")) {
-            // ⭐ 백엔드 API 호출: DELETE /api/match/cancel/{matchId}
-            alert("참여 취소 요청이 완료되었습니다. (시뮬레이션)");
-            // 성공 시 UI 업데이트
-            isParticipating = false;
-            // 현재 사용자를 목록에서 제거
-            const updatedParticipants = MOCK_PARTICIPANTS.filter(p => p.id !== CURRENT_USER_ID);
-            renderParticipantList(updatedParticipants);
+    // (6) 참가 취소
+    async function handleCancel() {
+        if (!confirm("참가를 취소하시겠습니까?")) return;
+
+        try {
+            const res = await fetch(`/api/matchrooms/${matchId}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUserId })
+            });
+            if (!res.ok) throw new Error('취소 실패');
+        } catch (err) {
+            alert(err.message);
         }
     }
 
+    // (7) WebSocket 연결
+    function connectWebSocket() {
+        const socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
 
-    // --- (★페이지별★) 로직 실행 ---
+        stompClient.connect({}, () => {
+            console.log("상세페이지 WS 연결 성공");
+
+            // 이 방의 참가자 변경 구독
+            stompClient.subscribe(`/topic/matchroom/${matchId}/participants`, (msg) => {
+                console.log("참가자 변경 감지! 목록 갱신");
+                fetchParticipantList(); // 목록 다시 불러오기
+            });
+        });
+    }
+
+    /* =========================================================
+       3. 초기화 실행
+    ========================================================= */
     document.addEventListener('DOMContentLoaded', async () => {
-        const accessToken = localStorage.getItem('accessToken');
-        const matchId = document.querySelector('#match-id-hidden').value; // 숨겨진 필드에서 ID 가져오기
+        const token = localStorage.getItem('accessToken');
+        currentUserId = Number(localStorage.getItem('userId'));
 
-        // 공통 알림 및 인증 로직 실행
-        if (accessToken) {
+        // 헤더 UI 처리
+        if (token) {
             document.getElementById('profile-menu-toggle').style.display = 'block';
-
-            // 로그인/로그아웃 메뉴 상태 설정
             if (navLoginLink) navLoginLink.parentElement.style.display = 'none';
             if (navLogoutLink) navLogoutLink.parentElement.style.display = 'list-item';
-
-            // ... (알림 체크 및 배지 업데이트) ...
         } else {
-            // 비회원 상태일 경우 메뉴 설정
             if (navLoginLink) navLoginLink.parentElement.style.display = 'list-item';
             if (navLogoutLink) navLogoutLink.parentElement.style.display = 'none';
         }
 
-        // ⭐⭐ 보강: 메뉴바의 채팅 링크 클릭 방지 (회원만 허용) ⭐⭐
-        if (navChatLinkElement) {
-            const chatLinkAnchor = navChatLinkElement.querySelector('a');
-            if (chatLinkAnchor && !accessToken) {
-                chatLinkAnchor.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    alert("❌ 실시간 채팅은 회원만 이용할 수 없습니다.");
-                    window.location.href = '/login';
-                });
-            }
-        }
+        // 데이터 로드
+        await fetchMatchDetail();
+        await fetchParticipantList();
 
-        // 더미 데이터 초기 렌더링
-        renderParticipantList(MOCK_PARTICIPANTS);
+        // 버튼 이벤트 연결
+        document.getElementById('join-match-btn').addEventListener('click', handleJoin);
+        document.getElementById('cancel-match-btn').addEventListener('click', handleCancel);
+
+        // 웹소켓 연결
+        connectWebSocket();
     });
+
 </script>
+
 </body>
 </html>
