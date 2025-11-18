@@ -14,16 +14,13 @@ import java.util.List;
 public class MatchRoomService {
 
     private final MatchRoomMapper matchRoomMapper;
-    private final MatchEventPublisher eventPublisher; // ✅ 이벤트 발행기 주입
+    private final MatchEventPublisher eventPublisher;
 
     @Transactional
     public MatchRoomDto create(MatchRoomCreateReq req) {
         matchRoomMapper.insert(req);
         MatchRoomDto newRoom = matchRoomMapper.findById(req.getRoomId());
-
-        // ✅ [추가] 실시간 경기 생성 알림 전송
         eventPublisher.publishNewMatchForStadium(newRoom.getStadiumId(), newRoom);
-
         return newRoom;
     }
 
@@ -33,5 +30,14 @@ public class MatchRoomService {
 
     public List<MatchRoomDto> findByStadium(Long stadiumId) {
         return matchRoomMapper.findByStadium(stadiumId);
+    }
+
+    /** ✅ [신규] 경기 모집 마감 (매칭 확정) */
+    @Transactional
+    public void closeMatch(Long roomId) {
+        matchRoomMapper.updateStatus(roomId, "CLOSED");
+
+        // 마감 이벤트를 발행하여 보고 있는 사람들에게 알림 (선택 사항)
+        // 여기서는 단순히 상태만 바꾸지만, 필요하면 WebSocket 메시지를 보낼 수도 있습니다.
     }
 }

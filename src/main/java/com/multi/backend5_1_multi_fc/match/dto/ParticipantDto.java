@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class ParticipantDto {
     private Long userId;
     private String nickname;
-    private String position; // 포지션 (없으면 "미정" 처리)
-    private String role;     // "Host" 또는 "Player"
+    private String position;
+    private String role;     // "Host" or "Player"
+    private String status;   // ✅ [추가됨] "대기", "확정" 등
 }

@@ -4,7 +4,6 @@
 
 <mapper namespace="com.multi.backend5_1_multi_fc.match.mapper.MatchRoomMapper">
 
-    <!-- MatchRoomDto 결과 매핑 -->
     <resultMap id="roomMap" type="com.multi.backend5_1_multi_fc.match.dto.MatchRoomDto">
         <id property="roomId" column="room_id"/>
         <result property="stadiumId" column="stadium_id"/>
@@ -16,7 +15,6 @@
         <result property="status" column="status"/>
     </resultMap>
 
-    <!-- 경기방 생성 -->
     <insert id="insert"
             parameterType="com.multi.backend5_1_multi_fc.match.dto.MatchRoomCreateReq"
             useGeneratedKeys="true"
@@ -28,18 +26,22 @@
             (#{stadiumId}, #{hostId}, #{matchDate}, #{matchTime}, #{maxPlayers}, #{level}, '모집중')
     </insert>
 
-    <!-- 특정 경기방 조회 -->
     <select id="findById" resultMap="roomMap">
         SELECT *
         FROM Match_Room
         WHERE room_id = #{roomId}
     </select>
 
-    <!-- 특정 구장의 경기 조회 -->
     <select id="findByStadium" resultMap="roomMap">
         SELECT *
         FROM Match_Room
         WHERE stadium_id = #{stadiumId}
     </select>
+
+    <update id="updateStatus">
+        UPDATE Match_Room
+        SET status = #{status}
+        WHERE room_id = #{roomId}
+    </update>
 
 </mapper>

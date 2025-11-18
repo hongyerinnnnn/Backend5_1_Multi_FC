@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 
     <style>
-        /* 원래 CSS 완벽 복구 */
+        /* 스타일 유지 */
         .stadium-main { padding: 100px 40px 40px 40px; background-color: #f7f7f7; min-height: 100vh; }
         .stadium-container { max-width: 1200px; margin: 0 auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 400px; gap: 30px; }
         .stadium-title { grid-column: 1 / -1; font-size: 32px; font-weight: 800; color: #333; margin-bottom: 5px; border-bottom: 3px solid #6c5ce7; padding-bottom: 10px; }
@@ -30,15 +30,20 @@
         .btn-create-match { background-color: #e74c3c; color: white; border: 2px solid #c0392b; }
         .btn-create-match:hover { background-color: #c0392b; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(231, 76, 60, 0.3); }
         .review-right-column h2 { font-size: 24px; color: #333; margin-bottom: 15px; }
+
+        /* 경기 목록 아이템 스타일 */
         #match-list { margin-top: 10px; border-top: 1px solid #eee; }
-        .match-item { padding: 10px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .match-item { padding: 15px 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
+        .match-item:hover { background-color: #f9f9f9; }
         .match-item:last-child { border-bottom: none; }
-        .match-item-time { font-weight: 700; color: #333; }
-        .match-item-meta { font-size: 13px; color: #777; }
-        .match-item:hover .match-item-time { text-decoration: underline; }
+        .match-item-time { font-weight: 700; color: #333; font-size: 16px; }
+        .match-item-meta { font-size: 13px; color: #777; display:flex; align-items:center; gap:5px; }
+
+        /* 상태 배지 스타일 */
         .match-status { font-weight: 700; margin-left: 4px; }
-        .match-status.open { color: #27ae60; }
-        .match-status.closed { color: #e74c3c; }
+        .match-status.open { color: #27ae60; } /* 초록색 */
+        .match-status.closed { color: #e74c3c; font-weight: 900; } /* 빨간색 */
+
         .tab-header { display: flex; border-bottom: 2px solid #eee; margin-bottom: 15px; }
         .tab-button { flex: 1; text-align: center; padding: 10px 0; cursor: pointer; font-weight: 700; font-size: 15px; border: none; background: none; outline: none; transition: all 0.2s ease; }
         .tab-button.active { color: #6c5ce7; border-bottom: 3px solid #6c5ce7; }
@@ -170,7 +175,6 @@
             document.getElementById('profile-menu-toggle').style.display = 'none';
         }
 
-        // 메뉴 이벤트
         document.getElementById('profile-menu-toggle')?.addEventListener('click', () => document.getElementById('profile-menu').classList.toggle('show'));
         document.getElementById('menu-toggle')?.addEventListener('click', () => document.getElementById('main-menu').classList.toggle('show'));
         document.getElementById('logout-button')?.addEventListener('click', (e) => {
@@ -179,9 +183,10 @@
             window.location.href = '/login';
         });
 
-        // 2. 구장 정보 로드
+        // 2. 구장 정보 및 경기 로드
         const stadiumId = new URLSearchParams(window.location.search).get('id');
         if(stadiumId) {
+            // 구장 정보
             const stadium = await (await fetch('/api/stadiums')).json().then(list => list.find(s => s.stadiumId == stadiumId));
             if(stadium) {
                 document.getElementById('stadium-name').textContent = `${stadium.name} (ID: ${stadiumId})`;
@@ -194,6 +199,7 @@
                     new kakao.maps.Marker({ position: map.getCenter(), map: map });
                 }
             }
+
             // 경기 목록
             let allMatches = await (await fetch(`/api/matchrooms/stadium/${stadiumId}`)).json();
 
@@ -203,18 +209,25 @@
 
             document.getElementById('match-date-filter').addEventListener('change', (e) => renderMatches(allMatches, e.target.value));
 
-            // WebSocket
+            // WebSocket (실시간 목록 갱신)
             const socket = new SockJS('/ws');
             const stompClient = Stomp.over(socket);
             stompClient.connect({}, () => {
                 stompClient.subscribe(`/topic/matches/${stadiumId}`, (msg) => {
-                    allMatches.push(JSON.parse(msg.body));
+                    const newMatch = JSON.parse(msg.body);
+                    // 기존 리스트에 없으면 추가 (중복 방지)
+                    if(!allMatches.some(m => m.roomId === newMatch.roomId)) {
+                        allMatches.push(newMatch);
+                    } else {
+                        // 상태 변경일 수 있으므로 업데이트 (마감 등)
+                        allMatches = allMatches.map(m => m.roomId === newMatch.roomId ? newMatch : m);
+                    }
                     renderMatches(allMatches, document.getElementById('match-date-filter').value);
                 });
             });
         }
 
-        // 3. 경기 생성
+        // 3. 경기 생성 버튼
         document.getElementById('btn-create-match').addEventListener('click', (e) => {
             e.preventDefault();
             if (!localStorage.getItem('accessToken')) {
@@ -227,17 +240,34 @@
         });
     });
 
+    // ✅ [수정됨] 경기 목록 렌더링 함수 (상태값 반영)
     function renderMatches(matches, date) {
         const list = document.getElementById('match-list');
         const filtered = matches.filter(m => m.matchDate === date);
-        list.innerHTML = filtered.length ? filtered.map(m =>
-            `<div class="match-item"><div class="match-item-time">${m.matchTime}</div><div class="match-item-meta">최대인원: ${m.maxPlayers}명 · <span class="match-status ${m.status==='closed'?'closed':'open'}">${m.status==='closed'?'마감':'모집중'}</span></div></div>`
-        ).join('') : '<p style="color:#777; padding:10px 0;">등록된 경기가 없습니다.</p>';
 
-        // 리스트 아이템 클릭 이벤트
-        document.querySelectorAll('.match-item').forEach((el, idx) => {
-            el.addEventListener('click', () => location.href=`/schedule/detail/${filtered[idx].roomId}`);
-        });
+        if (filtered.length === 0) {
+            list.innerHTML = '<p style="color:#777; padding:10px 0;">등록된 경기가 없습니다.</p>';
+            return;
+        }
+
+        // 시간순 정렬
+        filtered.sort((a, b) => a.matchTime.localeCompare(b.matchTime));
+
+        list.innerHTML = filtered.map(m => {
+            // 'CLOSED' 상태인지 확인
+            const isClosed = (m.status === 'CLOSED' || m.status === 'closed');
+            const statusText = isClosed ? '모집 마감' : '모집중';
+            const statusClass = isClosed ? 'closed' : 'open';
+
+            return `
+            <div class="match-item" onclick="location.href='/schedule/detail/${m.roomId}'">
+                <div class="match-item-time">${m.matchTime}</div>
+                <div class="match-item-meta">
+                    최대인원: ${m.maxPlayers}명 ·
+                    <span class="match-status ${statusClass}">${statusText}</span>
+                </div>
+            </div>`;
+        }).join('');
     }
 
     function openMatchModal(show) {
@@ -257,7 +287,6 @@
     }
 
     async function submitMatchForm() {
-        // ★★★ 핵심: ID 가져오기 ★★★
         const hostId = localStorage.getItem('userId');
         if(!hostId) { alert("로그인 정보가 없습니다."); location.href='/login'; return; }
 
@@ -279,7 +308,6 @@
         if(res.ok) {
             alert("경기 생성 완료!");
             openMatchModal(false);
-            // WebSocket이 화면 갱신함
         } else {
             alert("생성 실패");
         }
