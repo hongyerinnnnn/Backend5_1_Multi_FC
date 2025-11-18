@@ -9,6 +9,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
+    <!-- Kakao Map (DB에 lat/lng 저장돼 있으면 지도까지 표시) -->
+    <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=4caaf2cb0e09303d4dd13d3fb5ff15e9&libraries=services"></script>
+
+    <!-- ✅ WebSocket용 SockJS & STOMP 라이브러리 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
     <style>
         .stadium-main {
             padding: 100px 40px 40px 40px;
@@ -264,7 +271,7 @@
             display: block;
         }
 
-        /* ✅ 경기 개설 모달 (채팅 모달과 비슷한 구조) */
+        /* ✅ 경기 개설 모달 */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -410,6 +417,18 @@
         .match-item:hover .match-item-time {
             text-decoration: underline;
         }
+
+        /* ✅ 모집중/마감 상태 표시 */
+        .match-status {
+            font-weight: 700;
+            margin-left: 4px;
+        }
+        .match-status.open {
+            color: #27ae60; /* 모집중: 초록 */
+        }
+        .match-status.closed {
+            color: #e74c3c; /* 마감: 빨강 */
+        }
     </style>
 </head>
 <body>
@@ -441,7 +460,6 @@
             <li><a href="/fields" class="active"><i class="fas fa-search"></i> 구장검색</a></li>
             <li><a href="/community"><i class="fas fa-users"></i> 커뮤니티</a></li>
             <li id="nav-chat-link-li"><a href="/chat" id="nav-chat-link"><i class="fas fa-comments"></i> 실시간채팅</a></li>
-            <li><a href="/schedule"><i class="fas fa-calendar-alt"></i> 일정</a></li>
         </ul>
     </nav>
 </header>
@@ -449,7 +467,9 @@
 <main class="stadium-main">
     <div class="stadium-container">
 
-        <h1 class="stadium-title" id="stadium-name">강남 풋살 아레나 (ID: <span th:text="${stadiumId}">1</span>)</h1>
+        <h1 class="stadium-title" id="stadium-name">
+            강남 풋살 아레나 (ID: <span th:text="${stadiumId}">1</span>)
+        </h1>
 
         <div class="detail-left-column">
 
@@ -462,19 +482,19 @@
 
                 <div class="info-item">
                     <i class="fas fa-map-marker-alt"></i>
-                    <span id="stadium-address">서울 강남구 테헤란로 123</span>
+                    <span id="stadium-address">주소 로딩중...</span>
                 </div>
                 <div class="info-item">
                     <i class="fas fa-phone"></i>
-                    <span id="stadium-contact">02-1234-5678</span>
+                    <span id="stadium-contact">-</span>
                 </div>
                 <div class="info-item">
                     <i class="fas fa-won-sign"></i>
-                    <span id="stadium-fee">50,000원/시간</span>
+                    <span id="stadium-fee">-</span>
                 </div>
                 <div class="info-item">
                     <i class="fas fa-users"></i>
-                    <span id="stadium-size">5 vs 5</span>
+                    <span id="stadium-size">-</span>
                 </div>
             </div>
 
@@ -488,8 +508,8 @@
                 <button id="tab-btn-review" class="tab-button">후기</button>
             </div>
 
-            <!-- ✅ 경기 탭: 날짜 선택 + 경기 목록 -->
-            <div id="tab-match" class="tab-content">
+            <!-- 경기 탭 -->
+            <div id="tab-match" class="tab-content active">
                 <h2 style="font-size: 24px; color: #333; margin-bottom: 15px;">⚽ 경기 정보</h2>
 
                 <div class="match-filter">
@@ -505,7 +525,7 @@
             </div>
 
             <!-- 후기 탭 -->
-            <div id="tab-review" class="tab-content active">
+            <div id="tab-review" class="tab-content">
                 <h2 style="font-size: 24px; color: #333; margin-bottom: 15px;">
                     ⭐ 구장 리뷰 (<span id="review-count">0</span>건)
                 </h2>
@@ -526,7 +546,6 @@
                 <i class="fas fa-calendar-alt"></i> 매치/일정 확인
             </a>
 
-            <!-- 이 버튼 클릭 시 모달 열기 -->
             <a href="/match/create" class="btn-create-match" id="btn-create-match">
                 <i class="fas fa-plus-circle"></i> 경기 생성
             </a>
@@ -535,7 +554,7 @@
     </div>
 </main>
 
-<!-- ✅ 경기 개설 모달 -->
+<!-- 경기 개설 모달 -->
 <div id="match-create-modal" class="modal-overlay">
     <div class="modal-content">
         <h2>경기 개설</h2>
@@ -565,519 +584,293 @@
 </div>
 
 <script>
-    // --- 공통 메뉴 토글 및 인증 로직 ---
+    /* =========================================================
+       공통 메뉴 / 인증 / 알림 UI
+    ========================================================= */
     const menuToggle = document.getElementById('menu-toggle');
-    const mainMenu = document.getElementById('main-menu');        // ★ main-menu 로 수정
+    const mainMenu = document.getElementById('main-menu');
     const profileMenuToggle = document.getElementById('profile-menu-toggle');
-    const profileMenu = document.getElementById('profile-menu');  // ★ profile-menu 로 수정
+    const profileMenu = document.getElementById('profile-menu');
     const logoutButton = document.getElementById('logout-button');
     const navNotificationsLink = document.getElementById('nav-notifications-link');
 
     if (menuToggle) {
         menuToggle.addEventListener('click', () => {
-            if (mainMenu) mainMenu.classList.toggle('show');
-            if (profileMenu) profileMenu.classList.remove('show');
+            mainMenu?.classList.toggle('show');
+            profileMenu?.classList.remove('show');
         });
     }
-
     if (profileMenuToggle) {
         profileMenuToggle.addEventListener('click', () => {
-            if (profileMenu) profileMenu.classList.toggle('show');
-            if (mainMenu) mainMenu.classList.remove('show');
+            profileMenu?.classList.toggle('show');
+            mainMenu?.classList.remove('show');
         });
     }
 
-    // 헤더 바깥 클릭 시 메뉴 닫기
     document.addEventListener('click', (e) => {
         const header = document.querySelector('header');
-        if (header && !header.contains(e.target)) {
-            if (mainMenu) mainMenu.classList.remove('show');
-            if (profileMenu) profileMenu.classList.remove('show');
+        if (!header.contains(e.target)) {
+            mainMenu?.classList.remove('show');
+            profileMenu?.classList.remove('show');
         }
     });
 
-    // 로그아웃
     if (logoutButton) {
         logoutButton.addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.removeItem('accessToken');
-            localStorage.removeItem('hasReadReviews');
-            localStorage.removeItem('hasReadSchedules');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userNickname');
             window.location.href = '/login';
         });
     }
 
-    // 알림 이동
     if (navNotificationsLink) {
-        navNotificationsLink.addEventListener('click', (e) => {
-            e.preventDefault();
+        navNotificationsLink.addEventListener('click', () => {
             localStorage.setItem('hasReadReviews', 'true');
             localStorage.setItem('hasReadSchedules', 'true');
-            window.location.href = '/notifications';
         });
     }
 
-    // 알림 배지 (필요하면 사용)
-    function updateGlobalBadge() {
-        const hasNew = localStorage.getItem('hasNewNotification') === 'true';
-        const badge = document.getElementById('notification-badge');
-        if (badge) badge.style.display = hasNew ? 'block' : 'none';
-    }
-    updateGlobalBadge();
-
-    // --- 리뷰 페이지네이션 ---
-    const REVIEWS_PER_PAGE = 10;
-    let currentPage = 1;
-    let MOCK_ALL_REVIEWS = [];
-
-    function generateMockReviews() {
-        const reviews = [];
-        const names = ["캡틴손", "풋살매니아", "새 리뷰어", "축구사랑", "달리기왕", "키퍼짱", "스트라이커K"];
-        const contents = [
-            "구장 상태가 매우 깨끗하고 잔디 컨디션이 최고입니다.",
-            "샤워 시설이 잘 되어 있어서 퇴근 후 바로 경기하기 좋습니다. 조명도 밝아서 야간 경기하기 좋아요.",
-            "초보자에게 적합한 레벨의 매칭이 많아서 부담 없이 즐길 수 있었습니다! 위치도 좋습니다.",
-            "주차 공간이 조금 좁은 것이 흠이지만, 가성비가 좋아요.",
-            "관리자분이 친절하셔서 기분 좋게 운동했습니다.",
-            "다음에도 꼭 이용하고 싶은 구장입니다. 추천!",
-            "잔디가 약간 딱딱한 감이 있지만, 전체적으로 만족합니다."
-        ];
-
-        for (let i = 1; i <= 12; i++) {
-            reviews.push({
-                id: i,
-                user: names[i % names.length],
-                date: `2025-10-${String(10 + i).padStart(2, '0')}`,
-                content: contents[i % contents.length] + ` (Review #${i})`,
-                rating: (i % 5) + 1
-            });
-        }
-        return reviews;
-    }
-
-    function renderReviews(page) {
-        currentPage = page;
-        const listContainer = document.getElementById('review-list');
-        const totalReviews = MOCK_ALL_REVIEWS.length;
-        const CURRENT_USER_NICKNAME = "새 리뷰어";
-
-        const startIndex = (page - 1) * REVIEWS_PER_PAGE;
-        const endIndex = startIndex + REVIEWS_PER_PAGE;
-        const reviewsToDisplay = MOCK_ALL_REVIEWS.slice(startIndex, endIndex);
-
-        listContainer.innerHTML = '';
-
-        if (totalReviews === 0) {
-            listContainer.innerHTML = '<p style="text-align: center; color: #999; padding: 50px;">등록된 리뷰가 없습니다.</p>';
-            document.getElementById('review-count').textContent = 0;
-            document.getElementById('pagination-controls').style.display = 'none';
-            return;
-        }
-
-        reviewsToDisplay.forEach(review => {
-            const item = document.createElement('div');
-            item.className = 'review-item';
-
-            const isMyReview = review.user === CURRENT_USER_NICKNAME;
-            let actionButtonsHtml = '';
-
-            if (isMyReview) {
-                actionButtonsHtml = `
-                    <div class="review-actions">
-                        <button onclick="handleReviewEdit(${review.id})">수정</button>
-                        <button class="delete" onclick="handleReviewDelete(${review.id})">삭제</button>
-                    </div>
-                `;
-            }
-
-            const starRatingHtml = review.rating
-                ? `<span class="star-display">${'★'.repeat(review.rating)}</span>`
-                : '';
-
-            item.innerHTML = `
-                <div class="review-header">
-                    <span class="review-user">${starRatingHtml} ${review.user} ${isMyReview ? '(나)' : ''}</span>
-                    <span class="review-date">${review.date}</span>
-                </div>
-                <p class="review-content">${review.content}</p>
-                ${actionButtonsHtml}
-            `;
-            listContainer.appendChild(item);
+    /* =========================================================
+       Kakao Map Setup
+    ========================================================= */
+    function initMap(lat, lng) {
+        if (!(window.kakao && window.kakao.maps)) return;
+        const container = document.getElementById('map');
+        const center = new kakao.maps.LatLng(lat, lng);
+        const map = new kakao.maps.Map(container, {
+            center: center,
+            level: 3
         });
-
-        document.getElementById('review-count').textContent = totalReviews;
-        renderPagination(totalReviews, page);
+        new kakao.maps.Marker({ position: center, map });
     }
 
-    function renderPagination(totalReviews, currentPage) {
-        const totalPages = Math.ceil(totalReviews / REVIEWS_PER_PAGE);
-        const controls = document.getElementById('pagination-controls');
-        const pageNumbersContainer = document.getElementById('page-numbers');
-        const prevButton = document.getElementById('prev-page');
-        const nextButton = document.getElementById('next-page');
-
-        if (totalPages <= 1) {
-            controls.style.display = 'none';
-            return;
-        }
-
-        controls.style.display = 'block';
-        pageNumbersContainer.innerHTML = '';
-
-        const pagesPerGroup = 5;
-        const currentGroup = Math.ceil(currentPage / pagesPerGroup);
-        const startPage = (currentGroup - 1) * pagesPerGroup + 1;
-        const endPage = Math.min(startPage + pagesPerGroup - 1, totalPages);
-
-        for (let i = startPage; i <= endPage; i++) {
-            const pageButton = document.createElement('button');
-            pageButton.textContent = i;
-            pageButton.className = i === currentPage ? 'active' : '';
-            pageButton.onclick = () => renderReviews(i);
-            pageNumbersContainer.appendChild(pageButton);
-        }
-
-        prevButton.disabled = currentPage === 1;
-        nextButton.disabled = currentPage === totalPages;
-
-        prevButton.onclick = () => {
-            if (currentPage > 1) renderReviews(currentPage - 1);
-        };
-        nextButton.onclick = () => {
-            if (currentPage < totalPages) renderReviews(currentPage + 1);
-        };
+    /* =========================================================
+       API 연동
+    ========================================================= */
+    // 구장 상세 정보
+    async function fetchStadiumDetail(stadiumId) {
+        const res = await fetch('/api/stadiums');
+        const list = await res.json();
+        return list.find(s => s.stadiumId == stadiumId);
     }
 
-    function handleReviewEdit(reviewId) {
-        const reviewIndex = MOCK_ALL_REVIEWS.findIndex(r => r.id === reviewId);
-        if (reviewIndex !== -1) {
-            const currentContent = MOCK_ALL_REVIEWS[reviewIndex].content;
-            const currentRating = MOCK_ALL_REVIEWS[reviewIndex].rating;
-
-            const newContent = prompt(`리뷰 내용을 수정해주세요 (현재 별점: ${currentRating}점):`, currentContent);
-
-            if (newContent !== null && newContent.trim() !== "" && newContent.trim() !== currentContent.trim()) {
-                MOCK_ALL_REVIEWS[reviewIndex].content = newContent.trim() + " (수정됨)";
-
-                const stadiumId = new URLSearchParams(window.location.search).get('id') || '1';
-                let localReviews = JSON.parse(localStorage.getItem(`reviews_${stadiumId}`)) || [];
-
-                const localIndex = localReviews.findIndex(r => r.id === reviewId);
-                if (localIndex !== -1) {
-                    localReviews[localIndex].content = MOCK_ALL_REVIEWS[reviewIndex].content;
-                    localReviews[localIndex].rating = currentRating;
-                }
-                localStorage.setItem(`reviews_${stadiumId}`, JSON.stringify(localReviews));
-
-                renderReviews(currentPage);
-                alert("✅ 리뷰가 수정되었습니다.");
-            } else if (newContent !== null && newContent.trim() !== "") {
-                alert("수정된 내용이 없습니다.");
-            }
-        }
+    // 경기 목록
+    async function fetchMatches(stadiumId) {
+        const res = await fetch(`/api/matchrooms/stadium/${stadiumId}`);
+        return res.json();
     }
 
-    function handleReviewDelete(reviewId) {
-        if (confirm("정말로 이 리뷰를 삭제하시겠습니까?")) {
-            MOCK_ALL_REVIEWS = MOCK_ALL_REVIEWS.filter(r => r.id !== reviewId);
+    /* =========================================================
+       경기 목록 렌더링 (roomId 적용)
+    ========================================================= */
+    function renderMatchList(matches, selectedDate) {
+        const listEl = document.getElementById("match-list");
+        listEl.innerHTML = "";
 
-            const stadiumId = new URLSearchParams(window.location.search).get('id') || '1';
-            let localReviews = JSON.parse(localStorage.getItem(`reviews_${stadiumId}`)) || [];
-            localReviews = localReviews.filter(r => r.id !== reviewId);
-            localStorage.setItem(`reviews_${stadiumId}`, JSON.stringify(localReviews));
-
-            renderReviews(1);
-            alert("✅ 리뷰가 삭제되었습니다.");
-        }
-    }
-
-    window.handleReviewEdit = handleReviewEdit;
-    window.handleReviewDelete = handleReviewDelete;
-
-    // ✅ 경기 모달 열기/닫기
-    function openMatchModal(isOpen) {
-        const modal = document.getElementById('match-create-modal');
-        if (!modal) return;
-        if (isOpen) {
-            modal.classList.add('show');
-        } else {
-            modal.classList.remove('show');
-        }
-    }
-
-    // ✅ 로컬스토리지에서 전체 경기 가져오기
-    function getLocalMatches() {
-        try {
-            return JSON.parse(localStorage.getItem('match_schedules')) || [];
-        } catch (e) {
-            console.error("match_schedules 파싱 오류:", e);
-            localStorage.removeItem('match_schedules');
-            return [];
-        }
-    }
-
-    // ✅ 특정 구장 + 날짜에 대한 경기 목록 렌더링
-    function renderMatchList(stadiumId, dateStr) {
-        const listEl = document.getElementById('match-list');
-        if (!listEl) return;
-
-        listEl.innerHTML = '';
-
-        if (!dateStr) {
-            listEl.innerHTML = `<p style="color:#777; font-size:13px; padding:10px 0;">
-                날짜를 선택하면, 이 구장에서 진행 예정인 경기가 표시됩니다.
-            </p>`;
-            return;
-        }
-
-        const all = getLocalMatches();
-        const filtered = all
-            .filter(m => String(m.stadiumId) === String(stadiumId) && m.date === dateStr)
-            .sort((a, b) => a.startTime.localeCompare(b.startTime));
+        const filtered = matches.filter(m => m.matchDate === selectedDate);
 
         if (filtered.length === 0) {
-            listEl.innerHTML = `<p style="color:#777; font-size:13px; padding:10px 0;">
+            listEl.innerHTML = `
+            <p style="color:#777; font-size:13px; padding:10px 0;">
                 선택한 날짜에 등록된 경기가 없습니다.
             </p>`;
             return;
         }
 
-        filtered.forEach(match => {
-            const item = document.createElement('div');
-            item.className = 'match-item';
-            item.innerHTML = `
-                <div class="match-item-time">${match.startTime} ~ ${match.endTime}</div>
+        filtered
+            .sort((a, b) => a.matchTime.localeCompare(b.matchTime))
+            .forEach(m => {
+                const item = document.createElement("div");
+                item.className = "match-item";
+
+                const statusText = m.status === 'closed' ? '마감' : '모집중';
+                const statusClass = m.status === 'closed' ? 'closed' : 'open';
+
+                item.innerHTML = `
+                <div class="match-item-time">${m.matchTime}</div>
                 <div class="match-item-meta">
-                    주최자: ${match.creator || '알 수 없음'} · 인원 ${match.current || 1}/${match.max || 10}
+                    최대인원: ${m.maxPlayers}명
+                    · <span class="match-status ${statusClass}">${statusText}</span>
                 </div>
             `;
-            item.addEventListener('click', () => {
-                window.location.href = '/schedule/detail/' + match.id;
+
+                // ⭐ 클릭 시 상세페이지 이동 (roomId 사용)
+                item.addEventListener("click", () => {
+                    window.location.href = `/schedule/detail/${m.roomId}`;
+                });
+
+                listEl.appendChild(item);
             });
-            listEl.appendChild(item);
-        });
     }
 
-    // ✅ 경기 생성 제출 로직
-    function submitMatchForm() {
-        const stadiumId = new URLSearchParams(window.location.search).get('id') || '1';
-        const stadiumNameInput = document.getElementById('stadiumName');
-        const hostNameInput = document.getElementById('hostName');
-        const matchDateInput = document.getElementById('matchDate');
-        const startTimeSelect = document.getElementById('startTime');
-        const endTimeSelect = document.getElementById('endTime');
+    /* =========================================================
+       WebSocket (STOMP)
+    ========================================================= */
+    let stompClient = null;
+    let allMatches = [];
 
-        const matchDate = matchDateInput.value;
-        const startTime = startTimeSelect.value;
-        const endTime = endTimeSelect.value;
+    function connectMatchWebSocket(stadiumId) {
+        const socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
 
-        if (!stadiumId || stadiumNameInput.value.includes("정보 없음")) {
-            alert("❌ 경기 개설을 위해서는 유효한 구장을 먼저 선택해야 합니다.");
+        stompClient.connect({}, () => {
+            console.log("WebSocket 연결 성공");
+
+            // stadiumId별 구독
+            stompClient.subscribe(`/topic/matches/${stadiumId}`, (message) => {
+                const newMatch = JSON.parse(message.body);
+                console.log("실시간 경기 수신:", newMatch);
+
+                allMatches.push(newMatch);
+
+                const filterDate = document.getElementById('match-date-filter').value;
+                renderMatchList(allMatches, filterDate);
+            });
+        }, err => console.error("WebSocket 연결 실패:", err));
+    }
+
+    /* =========================================================
+       경기 생성 모달
+    ========================================================= */
+    function openMatchModal(isOpen) {
+        const modal = document.getElementById('match-create-modal');
+        if (isOpen) modal.classList.add('show');
+        else modal.classList.remove('show');
+    }
+
+    function setupTimeSelect() {
+        const start = document.getElementById("startTime");
+        const end = document.getElementById("endTime");
+        start.innerHTML = "";
+        end.innerHTML = "";
+
+        for (let i = 0; i < 24; i++) {
+            const t = `${String(i).padStart(2, '0')}:00`;
+            start.innerHTML += `<option value="${t}">${t}</option>`;
+            end.innerHTML += `<option value="${t}">${t}</option>`;
+        }
+        start.value = "19:00";
+        end.value = "20:00";
+    }
+
+    async function submitMatchForm() {
+        let stadiumId = new URLSearchParams(window.location.search).get('id');
+
+        if (!stadiumId || stadiumId === "null") {
+            const parts = window.location.pathname.split("/");
+            stadiumId = parts[parts.length - 1];
+        }
+
+        const matchDate = document.getElementById('matchDate').value;
+        const startTime = document.getElementById('startTime').value;
+        const endTime = document.getElementById('endTime').value;
+
+        if (!matchDate || startTime >= endTime) {
+            alert("❌ 날짜/시간 선택이 잘못되었습니다.");
             return;
         }
-        if (!matchDate) {
-            alert("❌ 경기 날짜를 선택해 주세요.");
-            return;
-        }
-        if (startTime >= endTime) {
-            alert("❌ 시작 시간은 종료 시간보다 빨라야 합니다.");
-            return;
-        }
 
-        const startDateTimeStr = `${matchDate}T${startTime}`;
-        const currentDateTimeStr = new Date().toISOString().slice(0, 16);
-        if (startDateTimeStr < currentDateTimeStr) {
-            alert("❌ 이미 지난 날짜나 시간으로는 경기를 개설할 수 없습니다.");
-            return;
-        }
+        const hostId = Number(localStorage.getItem('userId') || 11);
 
-        const NEW_MATCH_ID = Date.now();
-        const newMatchData = {
-            id: NEW_MATCH_ID,
-            stadiumId: stadiumId,
-            date: matchDate,
-            startTime: startTime,
-            endTime: endTime,
-            location: stadiumNameInput.value,
-            creator: hostNameInput.value,
-            current: 1,
-            max: 10,
-            status: "open",
-            type: "팀 매칭"
+        const req = {
+            stadiumId: Number(stadiumId),
+            hostId,
+            matchDate,
+            matchTime: startTime,
+            maxPlayers: 10,
+            level: "초급"
         };
 
-        let localMatchSchedules = getLocalMatches();
-        localMatchSchedules.unshift(newMatchData);
-        localStorage.setItem('match_schedules', JSON.stringify(localMatchSchedules));
+        const res = await fetch('/api/matchrooms', {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(req)
+        });
 
-        alert(`'${newMatchData.location}' 경기가 성공적으로 개설되었습니다!`);
+        if (!res.ok) {
+            alert("❌ 경기 생성 실패");
+            return;
+        }
+
+        alert("경기가 성공적으로 개설되었습니다!");
         openMatchModal(false);
 
-        const matchDateFilterInput = document.getElementById('match-date-filter');
-        if (matchDateFilterInput) {
-            if (!matchDateFilterInput.value) {
-                matchDateFilterInput.value = matchDate;
-            }
-            renderMatchList(stadiumId, matchDateFilterInput.value);
-        }
+        allMatches = await fetchMatches(stadiumId);
+        const filterDate = document.getElementById('match-date-filter').value;
+        renderMatchList(allMatches, filterDate);
     }
 
-    // DOMContentLoaded
-    document.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const stadiumId = urlParams.get('id') || '1';
+    window.submitMatchForm = submitMatchForm;
 
-        const tabBtnMatch = document.getElementById('tab-btn-match');
-        const tabBtnReview = document.getElementById('tab-btn-review');
-        const tabMatch = document.getElementById('tab-match');
-        const tabReview = document.getElementById('tab-review');
+    /* =========================================================
+       페이지 초기 로드
+    ========================================================= */
+    document.addEventListener('DOMContentLoaded', async () => {
 
-        function activateTab(tabName) {
-            if (tabName === 'match') {
-                tabBtnMatch.classList.add('active');
-                tabBtnReview.classList.remove('active');
-                tabMatch.classList.add('active');
-                tabReview.classList.remove('active');
-            } else {
-                tabBtnMatch.classList.remove('active');
-                tabBtnReview.classList.add('active');
-                tabMatch.classList.remove('active');
-                tabReview.classList.add('active');
-            }
+        const stadiumId = new URLSearchParams(window.location.search).get('id');
+
+        // 기본 탭 → 경기 탭 활성화
+        document.getElementById('tab-btn-match').classList.add('active');
+        document.getElementById('tab-match').classList.add('active');
+
+        // 구장 상세 정보 로딩
+        const stadium = await fetchStadiumDetail(stadiumId);
+        document.getElementById('stadium-name').textContent = `${stadium.name} (ID: ${stadiumId})`;
+        document.getElementById('stadium-address').textContent = stadium.address;
+        document.getElementById('stadium-contact').textContent = stadium.contact || "-";
+        document.getElementById('stadium-fee').textContent = stadium.fee || "-";
+        document.getElementById('stadium-size').textContent = stadium.size || "5 vs 5";
+
+        // 지도 생성
+        if (stadium.latitude && stadium.longitude) {
+            initMap(stadium.latitude, stadium.longitude);
         }
 
-        if (tabBtnMatch && tabBtnReview) {
-            tabBtnMatch.addEventListener('click', () => activateTab('match'));
-            tabBtnReview.addEventListener('click', () => activateTab('review'));
-        }
-        activateTab('match');
+        // 오늘 날짜 기본
+        const matchDateFilter = document.getElementById('match-date-filter');
+        const today = new Date().toISOString().split("T")[0];
+        matchDateFilter.value = today;
+        matchDateFilter.min = today;
 
-        const DUMMY_DATA = {
-            name: "강남 풋살 아레나",
-            address: "서울 강남구 테헤란로 123",
-            contact: "02-1234-5678",
-            fee: "50,000원/시간",
-            size: "5 vs 5"
-        };
+        // 경기 목록 로딩
+        allMatches = await fetchMatches(stadiumId);
+        renderMatchList(allMatches, today);
 
-        document.getElementById('stadium-name').textContent = `${DUMMY_DATA.name} (ID: ${stadiumId})`;
-        document.getElementById('stadium-address').textContent = DUMMY_DATA.address;
-        document.getElementById('stadium-contact').textContent = DUMMY_DATA.contact;
-        document.getElementById('stadium-fee').textContent = DUMMY_DATA.fee;
-        document.getElementById('stadium-size').textContent = DUMMY_DATA.size;
+        matchDateFilter.addEventListener('change', () => {
+            renderMatchList(allMatches, matchDateFilter.value);
+        });
 
+        // WebSocket 연결
+        connectMatchWebSocket(stadiumId);
 
-        let baseReviews = generateMockReviews();
-        const localReviews = JSON.parse(localStorage.getItem(`reviews_${stadiumId}`)) || [];
-        const allReviews = [...localReviews, ...baseReviews];
-        const uniqueReviews = allReviews.reduce((acc, review) => {
-            if (!acc.some(r => r.id === review.id)) {
-                acc.push(review);
-            }
-            return acc;
-        }, []);
-        MOCK_ALL_REVIEWS = uniqueReviews;
-        renderReviews(currentPage);
-
-        document.getElementById('btn-schedule').href = `/schedule?stadiumId=${stadiumId}`;
-        document.getElementById('btn-create-match').href = `/match/create?stadiumId=${stadiumId}`;
-
-        const accessToken = localStorage.getItem('accessToken');
-        if (accessToken) {
-            document.getElementById('profile-menu-toggle').style.display = 'block';
-        }
-
-        const btnCreateMatch = document.getElementById('btn-create-match');
-        const DEFAULT_USER = "로그인 사용자";
-        const hostNameInput = document.getElementById('hostName');
-        const stadiumNameInput = document.getElementById('stadiumName');
-        const hiddenStadiumIdInput = document.getElementById('stadiumId');
-        const matchDateInput = document.getElementById('matchDate');
-        const startTimeSelect = document.getElementById('startTime');
-        const endTimeSelect = document.getElementById('endTime');
-
-        function populateTimeSelects() {
-            startTimeSelect.innerHTML = '';
-            endTimeSelect.innerHTML = '';
-
-            for (let i = 0; i <= 23; i++) {
-                const timeStr = String(i).padStart(2, '0') + ':00';
-                startTimeSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
-            }
-            for (let i = 1; i <= 24; i++) {
-                const timeStr = String(i).padStart(2, '0') + ':00';
-                endTimeSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
+        /* 모달 열기 준비 */
+        document.getElementById('btn-create-match').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!localStorage.getItem('accessToken')) {
+                alert("로그인이 필요합니다.");
+                return (window.location.href = "/login");
             }
 
-            startTimeSelect.value = "19:00";
-            endTimeSelect.value = "20:00";
-        }
+            setupTimeSelect();
+            document.getElementById('hostName').value =
+                localStorage.getItem('userNickname') || "로그인 사용자";
+            document.getElementById('stadiumName').value = stadium.name;
+            document.getElementById('stadiumId').value = stadiumId;
 
-        function setupDateFieldForModal() {
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            const todayDateStr = `${yyyy}-${mm}-${dd}`;
-            matchDateInput.value = todayDateStr;
-            matchDateInput.min = todayDateStr;
-        }
+            document.getElementById('matchDate').value = today;
+            document.getElementById('matchDate').min = today;
 
-        function initMatchModalFields() {
-            hostNameInput.value = DEFAULT_USER;
+            openMatchModal(true);
+        });
 
-            const fullNameText = document.getElementById('stadium-name').textContent;
-            const pureName = fullNameText.split('(ID')[0].trim();
-            stadiumNameInput.value = pureName || "구장 정보 없음";
-            hiddenStadiumIdInput.value = stadiumId;
-
-            populateTimeSelects();
-            setupDateFieldForModal();
-        }
-
-        if (btnCreateMatch) {
-            btnCreateMatch.addEventListener('click', (e) => {
-                e.preventDefault();
-
-                const accessToken = localStorage.getItem('accessToken');
-                if (!accessToken) {
-                    alert("❌ 회원 전용 기능입니다.\n로그인 후 이용해 주세요.");
-                    window.location.href = '/login';
-                    return;
-                }
-
-                initMatchModalFields();
-                openMatchModal(true);
-            });
-        }
-
-        const matchDateFilterInput = document.getElementById('match-date-filter');
-        if (matchDateFilterInput) {
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            const todayDateStr = `${yyyy}-${mm}-${dd}`;
-
-            matchDateFilterInput.value = todayDateStr;
-            matchDateFilterInput.min = todayDateStr;
-
-            renderMatchList(stadiumId, todayDateStr);
-
-            matchDateFilterInput.addEventListener('change', () => {
-                renderMatchList(stadiumId, matchDateFilterInput.value);
-            });
-        }
-
-        const matchModal = document.getElementById('match-create-modal');
-        if (matchModal) {
-            matchModal.addEventListener('click', (e) => {
-                if (e.target === matchModal) {
-                    openMatchModal(false);
-                }
-            });
-        }
+        // 배경 클릭 시 모달 닫기
+        document.getElementById('match-create-modal').addEventListener('click', (e) => {
+            if (e.target.id === "match-create-modal") openMatchModal(false);
+        });
     });
+
 </script>
 
 </body>
