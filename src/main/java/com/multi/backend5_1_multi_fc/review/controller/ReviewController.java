@@ -17,19 +17,10 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    // 편의상 임시 사용자 ID를 가져오는 메서드 (실제로는 Spring Security 등으로 대체 필요)
-    private Long getCurrentUserId() {
-        // 이 로직은 실제 인증 시스템에 맞게 구현되어야 합니다.
-        // 여기서는 임시로 1L을 반환하거나, 요청 DTO에서 가져온다고 가정합니다.
-        return 1L;
-    }
-
     /** POST /api/reviews : 후기 등록 */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void createReview(@RequestBody ReviewCreateReq req) {
-        // [TODO] 실제 구현 시, 세션/JWT에서 userId를 가져와 req.setUserId(userId) 해야 합니다.
-        // [TODO] 경기가 확정/종료되었는지 확인하는 로직이 Service에 있어야 합니다.
         reviewService.createReview(req);
     }
 
@@ -39,12 +30,18 @@ public class ReviewController {
         return reviewService.getReviewsByStadium(stadiumId);
     }
 
-    // --- [신규/수정] ---
+    // ⭐⭐⭐ [추가] 후기 작성이 필요한 구장 ID 목록 API ⭐⭐⭐
+    @GetMapping("/pending-stadiums")
+    public List<Long> getPendingReviewStadiums(@RequestParam Long userId) {
+        // ReviewService.java에서 getPendingReviewStadiums 메서드를 호출합니다.
+        return reviewService.getPendingReviewStadiums(userId);
+    }
+    // ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐
 
     /** PUT /api/reviews/{reviewId} : 후기 수정 (본인만 가능) */
     @PutMapping("/{reviewId}")
     public ResponseEntity<?> updateReview(@PathVariable Long reviewId, @RequestBody ReviewCreateReq req) {
-        Long userId = req.getUserId(); // 프론트에서 임시로 userId를 같이 보낸다고 가정
+        Long userId = req.getUserId(); // 프론트에서 userId를 같이 보낸다고 가정
         if (userId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("사용자 정보가 필요합니다.");
         }
@@ -62,8 +59,6 @@ public class ReviewController {
     /** DELETE /api/reviews/{reviewId} : 후기 삭제 (본인만 가능) */
     @DeleteMapping("/{reviewId}")
     public ResponseEntity<?> deleteReview(@PathVariable Long reviewId, @RequestParam Long userId) {
-        // 쿼리 파라미터로 userId를 받아서 본인 확인 (실제로는 Security Context 사용)
-
         try {
             reviewService.deleteReview(reviewId, userId);
             return ResponseEntity.ok().build();

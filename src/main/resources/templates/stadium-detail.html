@@ -214,7 +214,6 @@
 
         // 2. 구장 정보 및 경기 로드
         const stadiumId = new URLSearchParams(window.location.search).get('id');
-        // ⭐ [수정] currentUserId를 Number()로 변환하기 위해 가져옴
         const currentUserId = localStorage.getItem('userId');
 
         if(stadiumId) {
@@ -514,6 +513,3 @@
         }
     }
 </script>
-
-</body>
-</html>
