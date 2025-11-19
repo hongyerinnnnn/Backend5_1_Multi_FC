@@ -11,4 +11,7 @@ public class ReviewCreateReq {
     private Long userId;    // 사용자 ID (FK)
     private Integer rating; // 평점 (1~5)
     private String content; // 후기 내용
+
+    // ⭐⭐⭐ [수정 필요] reviewId 필드 추가 및 Setter 허용 ⭐⭐⭐
+    private Long reviewId;
 }
