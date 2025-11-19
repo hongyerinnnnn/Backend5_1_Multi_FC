@@ -1,4 +1,3 @@
-// 경기방 생성/조회 REST API
 package com.multi.backend5_1_multi_fc.match.controller;
 
 import com.multi.backend5_1_multi_fc.match.dto.MatchRoomCreateReq;
@@ -29,5 +28,11 @@ public class MatchRoomController {
     @GetMapping("/stadium/{stadiumId}")
     public List<MatchRoomDto> getByStadium(@PathVariable Long stadiumId) {
         return matchRoomService.findByStadium(stadiumId);
+    }
+
+    /** ✅ [신규] 경기 마감 */
+    @PostMapping("/{roomId}/close")
+    public void closeMatch(@PathVariable Long roomId) {
+        matchRoomService.closeMatch(roomId);
     }
 }

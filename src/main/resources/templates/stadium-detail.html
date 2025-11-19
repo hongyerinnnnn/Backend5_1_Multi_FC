@@ -4,431 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="'구장 상세 (' + ${stadiumId} + ') - MULTI FC'">MULTI FC - 구장 상세</title>
-
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-    <!-- Kakao Map (DB에 lat/lng 저장돼 있으면 지도까지 표시) -->
     <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=4caaf2cb0e09303d4dd13d3fb5ff15e9&libraries=services"></script>
-
-    <!-- ✅ WebSocket용 SockJS & STOMP 라이브러리 추가 -->
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 
     <style>
-        .stadium-main {
-            padding: 100px 40px 40px 40px;
-            background-color: #f7f7f7;
-            min-height: 100vh;
-        }
-        .stadium-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 30px;
-        }
-        .stadium-title {
-            grid-column: 1 / -1;
-            font-size: 32px;
-            font-weight: 800;
-            color: #333;
-            margin-bottom: 5px;
-            border-bottom: 3px solid #6c5ce7;
-            padding-bottom: 10px;
-        }
+        /* 스타일 유지 */
+        .stadium-main { padding: 100px 40px 40px 40px; background-color: #f7f7f7; min-height: 100vh; }
+        .stadium-container { max-width: 1200px; margin: 0 auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 400px; gap: 30px; }
+        .stadium-title { grid-column: 1 / -1; font-size: 32px; font-weight: 800; color: #333; margin-bottom: 5px; border-bottom: 3px solid #6c5ce7; padding-bottom: 10px; }
+        .detail-left-column { grid-column: 1 / 2; display: flex; flex-direction: column; }
+        .map-area { width: 100%; height: 350px; background-color: #eee; border-radius: 10px; margin-bottom: 25px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #888; }
+        .review-right-column { grid-column: 2 / 3; grid-row: 2 / span 2; background: #fcfcfc; border-radius: 10px; padding: 15px; border: 1px solid #ddd; max-height: 685px; overflow-y: auto; }
+        .info-card { border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-top: 0; }
+        .info-card h2{ margin-bottom: 20px; }
+        .info-item { display: flex; align-items: center; margin-bottom: 10px; font-size: 16px; }
+        .info-item i { width: 25px; color: #6c5ce7; margin-right: 10px; }
+        .action-button-group { text-align: center; grid-column: 1 / 2; display: flex; justify-content: center; gap: 15px; }
+        .action-button-group a, .action-button-group button { display: inline-block; padding: 14px 28px; font-weight: 700; border-radius: 30px; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); font-size: 16px; flex-grow: 0; flex-shrink: 0; border:none; cursor:pointer; }
+        .btn-schedule { background-color: #333; color: white; border: 2px solid #1a1a1a; }
+        .btn-schedule:hover { background-color: #1a1a1a; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); }
+        .btn-create-match { background-color: #e74c3c; color: white; border: 2px solid #c0392b; }
+        .btn-create-match:hover { background-color: #c0392b; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(231, 76, 60, 0.3); }
+        .review-right-column h2 { font-size: 24px; color: #333; margin-bottom: 15px; }
 
-        .detail-left-column {
-            grid-column: 1 / 2;
-            display: flex;
-            flex-direction: column;
-        }
+        /* 경기 목록 아이템 스타일 */
+        #match-list { margin-top: 10px; border-top: 1px solid #eee; }
+        .match-item { padding: 15px 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
+        .match-item:hover { background-color: #f9f9f9; }
+        .match-item:last-child { border-bottom: none; }
+        .match-item-time { font-weight: 700; color: #333; font-size: 16px; }
+        .match-item-meta { font-size: 13px; color: #777; display:flex; align-items:center; gap:5px; }
 
-        .map-area {
-            width: 100%;
-            height: 350px;
-            background-color: #eee;
-            border-radius: 10px;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            color: #888;
-        }
+        /* 상태 배지 스타일 */
+        .match-status { font-weight: 700; margin-left: 4px; }
+        .match-status.open { color: #27ae60; } /* 초록색 */
+        .match-status.closed { color: #e74c3c; font-weight: 900; } /* 빨간색 */
 
-        .review-right-column {
-            grid-column: 2 / 3;
-            grid-row: 2 / span 2;
-            background: #fcfcfc;
-            border-radius: 10px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            max-height: 685px;
-            overflow-y: auto;
-        }
+        .tab-header { display: flex; border-bottom: 2px solid #eee; margin-bottom: 15px; }
+        .tab-button { flex: 1; text-align: center; padding: 10px 0; cursor: pointer; font-weight: 700; font-size: 15px; border: none; background: none; outline: none; transition: all 0.2s ease; }
+        .tab-button.active { color: #6c5ce7; border-bottom: 3px solid #6c5ce7; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-        .info-card {
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 0;
-        }
-        .info-card h2{
-            margin-bottom: 20px;
-        }
-        .info-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-        .info-item i {
-            width: 25px;
-            color: #6c5ce7;
-            margin-right: 10px;
-        }
-        .amenities-list {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-            font-size: 14px;
-        }
-        .amenity-tag {
-            display: inline-block;
-            background: #e6e6ff;
-            color: #6c5ce7;
-            padding: 5px 10px;
-            border-radius: 20px;
-            margin-right: 8px;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
+        /* 모달 */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 999; }
+        .modal-overlay.show { display: flex; }
+        .modal-content { background: #fff; border-radius: 15px; padding: 25px; width: 90%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); }
+        .modal-content h2 { font-size: 24px; margin-bottom: 15px; font-weight: 800; color: #2c3e50; }
+        .modal-content label { display: block; font-size: 15px; font-weight: 700; color: #34495e; margin-top: 10px; margin-bottom: 6px; }
+        .modal-content input, .modal-content select { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9; color: #333; box-sizing: border-box; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .btn-cancel { background-color: #e0e0e0; color: #555; padding: 8px 16px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; }
+        .btn-create { background-color: #333; color: #fff; padding: 8px 16px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; }
 
-        .action-button-group {
-            text-align: center;
-            grid-column: 1 / 2;
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-        .action-button-group a {
-            display: inline-block;
-            padding: 14px 28px;
-            font-weight: 700;
-            border-radius: 30px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            font-size: 16px;
-            flex-grow: 0;
-            flex-shrink: 0;
-        }
-        .btn-schedule {
-            background-color: #333;
-            color: white;
-            border: 2px solid #1a1a1a;
-        }
-        .btn-schedule:hover {
-            background-color: #1a1a1a;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-        }
-        .btn-create-match {
-            background-color: #e74c3c;
-            color: white;
-            border: 2px solid #c0392b;
-        }
-        .btn-create-match:hover {
-            background-color: #c0392b;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(231, 76, 60, 0.3);
-        }
-
-        .review-right-column h2 {
-            font-size: 24px;
-            color: #333;
-            margin-bottom: 15px;
-        }
-
-        #review-list {
-            min-height: 300px;
-        }
-        .review-item {
-            border-bottom: 1px solid #eee;
-            padding: 15px 0;
-        }
-        .review-item:last-child {
-            border-bottom: none;
-        }
-        .review-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            margin-bottom: 5px;
-        }
-        .review-user {
-            font-weight: 700;
-            color: #6c5ce7;
-            display: flex;
-            align-items: center;
-        }
-        .review-date {
-            color: #999;
-        }
-        .review-content {
-            font-size: 15px;
-            line-height: 1.5;
-            color: #333;
-        }
-        .review-item .star-display {
-            color: #f39c12;
-            font-size: 18px;
-            margin-right: 10px;
-            letter-spacing: 2px;
-        }
-
-        .review-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-top: 5px;
-            justify-content: flex-end;
-        }
-        .review-actions button {
-            background: none;
-            border: none;
-            color: #6c5ce7;
-            font-size: 13px;
-            cursor: pointer;
-            padding: 2px 5px;
-            transition: color 0.2s;
-        }
-        .review-actions button.delete {
-            color: #e74c3c;
-        }
-
-        .pagination-controls {
-            text-align: center;
-            margin-top: 20px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-        }
-        .pagination-controls button {
-            background: none;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 5px 10px;
-            margin: 0 5px;
-            color: #555;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .pagination-controls button:hover:not(:disabled) {
-            background-color: #f0f0f0;
-        }
-        .pagination-controls button.active {
-            background-color: #6c5ce7;
-            color: white;
-            border-color: #6c5ce7;
-        }
-        .pagination-controls button:disabled {
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-
-        .tab-header {
-            display: flex;
-            border-bottom: 2px solid #eee;
-            margin-bottom: 15px;
-        }
-        .tab-button {
-            flex: 1;
-            text-align: center;
-            padding: 10px 0;
-            cursor: pointer;
-            font-weight: 700;
-            font-size: 15px;
-            border: none;
-            background: none;
-            outline: none;
-            transition: all 0.2s ease;
-        }
-        .tab-button.active {
-            color: #6c5ce7;
-            border-bottom: 3px solid #6c5ce7;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-
-        /* ✅ 경기 개설 모달 */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 999;
-        }
-        .modal-overlay.show {
-            display: flex;
-        }
-        .modal-content {
-            background: #fff;
-            border-radius: 15px;
-            padding: 25px 25px 20px;
-            width: 90%;
-            max-width: 600px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-        }
-        .modal-content h2 {
-            font-size: 24px;
-            margin-bottom: 15px;
-            font-weight: 800;
-            color: #2c3e50;
-        }
-        .modal-content label {
-            display: block;
-            font-size: 15px;
-            font-weight: 700;
-            color: #34495e;
-            margin-top: 10px;
-            margin-bottom: 6px;
-        }
-        .modal-content input[type="text"],
-        .modal-content input[type="date"],
-        .modal-content select {
-            width: 100%;
-            padding: 10px 12px;
-            font-size: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-sizing: border-box;
-            background-color: #f9f9f9;
-            color: #333;
-        }
-        .modal-content input[type="text"]:focus,
-        .modal-content input[type="date"]:focus,
-        .modal-content select:focus {
-            border-color: #6c5ce7;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
-        }
-        .modal-content input[type="text"][readonly] {
-            background-color: #e9ecef;
-            color: #495057;
-            font-weight: 600;
-            border: 1px solid #ced4da;
-        }
-        .time-select-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        .time-select-group select {
-            flex-grow: 1;
-            min-width: 120px;
-        }
-        .time-select-group span {
-            font-size: 18px;
-            color: #555;
-            font-weight: 600;
-        }
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .btn-cancel,
-        .btn-create {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .btn-cancel {
-            background-color: #e0e0e0;
-            color: #555;
-        }
-        .btn-cancel:hover {
-            background-color: #bdbdbd;
-        }
-        .btn-create {
-            background-color: #333;
-            color: #fff;
-        }
-        .btn-create:hover {
-            background-color: #111;
-        }
-
-        /* ✅ 경기 목록 UI */
-        .match-filter {
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        .match-filter label {
-            font-weight: 600;
-            margin-right: 8px;
-        }
-        .match-filter input[type="date"] {
-            padding: 6px 8px;
-            font-size: 14px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-            background-color: #fff;
-        }
-        .match-list {
-            margin-top: 10px;
-            border-top: 1px solid #eee;
-        }
-        .match-item {
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-        .match-item:last-child {
-            border-bottom: none;
-        }
-        .match-item-time {
-            font-weight: 700;
-            color: #333;
-        }
-        .match-item-meta {
-            font-size: 13px;
-            color: #777;
-        }
-        .match-item:hover .match-item-time {
-            text-decoration: underline;
-        }
-
-        /* ✅ 모집중/마감 상태 표시 */
-        .match-status {
-            font-weight: 700;
-            margin-left: 4px;
-        }
-        .match-status.open {
-            color: #27ae60; /* 모집중: 초록 */
-        }
-        .match-status.closed {
-            color: #e74c3c; /* 마감: 빨강 */
-        }
+        /* 헤더 스타일 (공통) */
+        .user-menu { position: absolute; top: 60px; right: 20px; background: white; border: 1px solid #ddd; border-radius: 10px; padding: 15px; display: none; width: 200px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); z-index: 1000; }
+        .user-menu.show { display: block; }
     </style>
 </head>
 <body>
@@ -436,23 +71,20 @@
 <header class="quick-menu">
     <div class="logo"><a href="/">MULTI FC</a></div>
     <div class="header-icons">
-        <button id="profile-menu-toggle" class="profile-icon" style="position: relative; display: block;">
+        <a href="/login" id="nav-login-btn" style="margin-right:10px; font-weight:bold; color:#333; display:block;">로그인</a>
+        <button id="profile-menu-toggle" class="profile-icon" style="position: relative; display: none; background:none; border:none; font-size:24px; cursor:pointer;">
             <i class="fas fa-user-circle"></i>
-            <span id="notification-badge" class="notification-badge"></span>
         </button>
         <div id="profile-menu" class="user-menu">
             <div class="user-info">
-                <strong><span id="user-menu-username">사용자</span>님</strong>
+                <strong><span id="user-menu-username">회원</span>님</strong>
                 <p>환영합니다!</p>
             </div>
             <ul>
-                <li><a href="/notifications" id="nav-notifications-link"><i class="fas fa-bell"></i> 알림 목록</a></li>
-                <li><a href="/mypage"><i class="fas fa-user"></i> 마이페이지</a></li>
-                <li><a href="/profile/edit"><i class="fas fa-user-edit"></i> 프로필 수정</a></li>
                 <li><a href="#" id="logout-button"><i class="fas fa-sign-out-alt"></i> 로그아웃</a></li>
             </ul>
         </div>
-        <button id="menu-toggle" class="menu-toggle-btn"><i class="fas fa-bars"></i></button>
+        <button id="menu-toggle" class="menu-toggle-btn" style="background:none; border:none; font-size:20px;"> <i class="fas fa-bars"></i> </button>
     </div>
     <nav id="main-menu" class="main-nav">
         <ul>
@@ -466,116 +98,61 @@
 
 <main class="stadium-main">
     <div class="stadium-container">
-
-        <h1 class="stadium-title" id="stadium-name">
-            강남 풋살 아레나 (ID: <span th:text="${stadiumId}">1</span>)
-        </h1>
+        <h1 class="stadium-title" id="stadium-name">구장 정보 로딩중... (ID: <span th:text="${stadiumId}"></span>)</h1>
 
         <div class="detail-left-column">
-
-            <div class="map-area" id="map">
-                (KakaoMap API가 표시될 구장 위치)
-            </div>
-
+            <div class="map-area" id="map"></div>
             <div class="info-card">
                 <h2>구장 기본 정보</h2>
-
-                <div class="info-item">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <span id="stadium-address">주소 로딩중...</span>
-                </div>
-                <div class="info-item">
-                    <i class="fas fa-phone"></i>
-                    <span id="stadium-contact">-</span>
-                </div>
-                <div class="info-item">
-                    <i class="fas fa-won-sign"></i>
-                    <span id="stadium-fee">-</span>
-                </div>
-                <div class="info-item">
-                    <i class="fas fa-users"></i>
-                    <span id="stadium-size">-</span>
-                </div>
+                <div class="info-item"><i class="fas fa-map-marker-alt"></i> <span id="stadium-address">주소</span></div>
+                <div class="info-item"><i class="fas fa-phone"></i> <span id="stadium-contact">-</span></div>
+                <div class="info-item"><i class="fas fa-won-sign"></i> <span id="stadium-fee">-</span></div>
+                <div class="info-item"><i class="fas fa-users"></i> <span id="stadium-size">-</span></div>
             </div>
-
         </div>
 
         <div class="review-right-column">
-
-            <!-- 탭 헤더 -->
             <div class="tab-header">
                 <button id="tab-btn-match" class="tab-button active">경기</button>
                 <button id="tab-btn-review" class="tab-button">후기</button>
             </div>
-
-            <!-- 경기 탭 -->
             <div id="tab-match" class="tab-content active">
                 <h2 style="font-size: 24px; color: #333; margin-bottom: 15px;">⚽ 경기 정보</h2>
-
                 <div class="match-filter">
                     <label for="match-date-filter">날짜 선택</label>
                     <input type="date" id="match-date-filter">
                 </div>
-
                 <div id="match-list" class="match-list">
-                    <p style="color:#777; font-size:13px; padding:10px 0;">
-                        날짜를 선택하면, 이 구장에서 진행 예정인 경기가 시간 기준으로 표시됩니다.
-                    </p>
+                    <p style="color:#777; font-size:13px; padding:10px 0;">날짜를 선택하면 경기가 표시됩니다.</p>
                 </div>
             </div>
-
-            <!-- 후기 탭 -->
             <div id="tab-review" class="tab-content">
-                <h2 style="font-size: 24px; color: #333; margin-bottom: 15px;">
-                    ⭐ 구장 리뷰 (<span id="review-count">0</span>건)
-                </h2>
-
+                <h2 style="font-size: 24px; color: #333; margin-bottom: 15px;">⭐ 구장 리뷰</h2>
                 <div id="review-list"></div>
-
-                <div id="pagination-controls" class="pagination-controls" style="display:none;">
-                    <button id="prev-page">&lt;</button>
-                    <div id="page-numbers" style="display: inline;"></div>
-                    <button id="next-page">&gt;</button>
-                </div>
             </div>
-
         </div>
 
         <div class="action-button-group">
-            <a href="/schedule?stadiumId=1" class="btn-schedule" id="btn-schedule">
-                <i class="fas fa-calendar-alt"></i> 매치/일정 확인
-            </a>
-
-            <a href="/match/create" class="btn-create-match" id="btn-create-match">
-                <i class="fas fa-plus-circle"></i> 경기 생성
-            </a>
+            <a href="/schedule?stadiumId=1" class="btn-schedule" id="btn-schedule"><i class="fas fa-calendar-alt"></i> 매치/일정 확인</a>
+            <button class="btn-create-match" id="btn-create-match"><i class="fas fa-plus-circle"></i> 경기 생성</button>
         </div>
-
     </div>
 </main>
 
-<!-- 경기 개설 모달 -->
 <div id="match-create-modal" class="modal-overlay">
     <div class="modal-content">
         <h2>경기 개설</h2>
-
-        <label for="hostName">주최자</label>
-        <input type="text" id="hostName" value="로그인 사용자" readonly>
-
-        <label for="stadiumName" style="margin-top: 10px;">장소</label>
-        <input type="text" id="stadiumName" value="구장 정보 없음" readonly>
-        <input type="hidden" id="stadiumId" name="stadiumId">
-
-        <label for="matchDate" style="margin-top: 10px;">날짜</label>
-        <input type="date" id="matchDate" name="matchDate" required>
-
-        <label for="startTime" style="margin-top: 10px;">시간</label>
+        <label>주최자</label>
+        <input type="text" id="hostName" readonly>
+        <label>장소</label>
+        <input type="text" id="stadiumName" readonly>
+        <input type="hidden" id="stadiumId">
+        <label>날짜</label>
+        <input type="date" id="matchDate">
+        <label>시간</label>
         <div class="time-select-group">
-            <select id="startTime" name="startTime"></select>
-            <span>~</span>
-            <select id="endTime" name="endTime"></select>
+            <select id="startTime"></select> <span>~</span> <select id="endTime"></select>
         </div>
-
         <div class="modal-actions">
             <button class="btn-cancel" onclick="openMatchModal(false)">취소</button>
             <button class="btn-create" onclick="submitMatchForm()">생성</button>
@@ -584,293 +161,160 @@
 </div>
 
 <script>
-    /* =========================================================
-       공통 메뉴 / 인증 / 알림 UI
-    ========================================================= */
-    const menuToggle = document.getElementById('menu-toggle');
-    const mainMenu = document.getElementById('main-menu');
-    const profileMenuToggle = document.getElementById('profile-menu-toggle');
-    const profileMenu = document.getElementById('profile-menu');
-    const logoutButton = document.getElementById('logout-button');
-    const navNotificationsLink = document.getElementById('nav-notifications-link');
+    document.addEventListener('DOMContentLoaded', async () => {
+        // 1. 헤더 및 로그인 상태 확인
+        const token = localStorage.getItem('accessToken');
+        const nickname = localStorage.getItem('userNickname');
 
-    if (menuToggle) {
-        menuToggle.addEventListener('click', () => {
-            mainMenu?.classList.toggle('show');
-            profileMenu?.classList.remove('show');
-        });
-    }
-    if (profileMenuToggle) {
-        profileMenuToggle.addEventListener('click', () => {
-            profileMenu?.classList.toggle('show');
-            mainMenu?.classList.remove('show');
-        });
-    }
-
-    document.addEventListener('click', (e) => {
-        const header = document.querySelector('header');
-        if (!header.contains(e.target)) {
-            mainMenu?.classList.remove('show');
-            profileMenu?.classList.remove('show');
+        if (token) {
+            document.getElementById('nav-login-btn').style.display = 'none';
+            document.getElementById('profile-menu-toggle').style.display = 'block';
+            document.getElementById('user-menu-username').textContent = nickname || '회원';
+        } else {
+            document.getElementById('nav-login-btn').style.display = 'block';
+            document.getElementById('profile-menu-toggle').style.display = 'none';
         }
-    });
 
-    if (logoutButton) {
-        logoutButton.addEventListener('click', (e) => {
+        document.getElementById('profile-menu-toggle')?.addEventListener('click', () => document.getElementById('profile-menu').classList.toggle('show'));
+        document.getElementById('menu-toggle')?.addEventListener('click', () => document.getElementById('main-menu').classList.toggle('show'));
+        document.getElementById('logout-button')?.addEventListener('click', (e) => {
             e.preventDefault();
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('userId');
-            localStorage.removeItem('userNickname');
+            localStorage.clear();
             window.location.href = '/login';
         });
-    }
 
-    if (navNotificationsLink) {
-        navNotificationsLink.addEventListener('click', () => {
-            localStorage.setItem('hasReadReviews', 'true');
-            localStorage.setItem('hasReadSchedules', 'true');
+        // 2. 구장 정보 및 경기 로드
+        const stadiumId = new URLSearchParams(window.location.search).get('id');
+        if(stadiumId) {
+            // 구장 정보
+            const stadium = await (await fetch('/api/stadiums')).json().then(list => list.find(s => s.stadiumId == stadiumId));
+            if(stadium) {
+                document.getElementById('stadium-name').textContent = `${stadium.name} (ID: ${stadiumId})`;
+                document.getElementById('stadium-address').textContent = stadium.address;
+                document.getElementById('stadiumName').value = stadium.name;
+                document.getElementById('stadiumId').value = stadiumId;
+
+                if (window.kakao && kakao.maps) {
+                    const map = new kakao.maps.Map(document.getElementById('map'), { center: new kakao.maps.LatLng(stadium.latitude, stadium.longitude), level: 3 });
+                    new kakao.maps.Marker({ position: map.getCenter(), map: map });
+                }
+            }
+
+            // 경기 목록
+            let allMatches = await (await fetch(`/api/matchrooms/stadium/${stadiumId}`)).json();
+
+            const today = new Date().toISOString().split("T")[0];
+            document.getElementById('match-date-filter').value = today;
+            renderMatches(allMatches, today);
+
+            document.getElementById('match-date-filter').addEventListener('change', (e) => renderMatches(allMatches, e.target.value));
+
+            // WebSocket (실시간 목록 갱신)
+            const socket = new SockJS('/ws');
+            const stompClient = Stomp.over(socket);
+            stompClient.connect({}, () => {
+                stompClient.subscribe(`/topic/matches/${stadiumId}`, (msg) => {
+                    const newMatch = JSON.parse(msg.body);
+                    // 기존 리스트에 없으면 추가 (중복 방지)
+                    if(!allMatches.some(m => m.roomId === newMatch.roomId)) {
+                        allMatches.push(newMatch);
+                    } else {
+                        // 상태 변경일 수 있으므로 업데이트 (마감 등)
+                        allMatches = allMatches.map(m => m.roomId === newMatch.roomId ? newMatch : m);
+                    }
+                    renderMatches(allMatches, document.getElementById('match-date-filter').value);
+                });
+            });
+        }
+
+        // 3. 경기 생성 버튼
+        document.getElementById('btn-create-match').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!localStorage.getItem('accessToken')) {
+                alert('로그인이 필요합니다.');
+                return location.href = '/login';
+            }
+            document.getElementById('hostName').value = localStorage.getItem('userNickname') || '회원';
+            setupTime();
+            openMatchModal(true);
         });
-    }
+    });
 
-    /* =========================================================
-       Kakao Map Setup
-    ========================================================= */
-    function initMap(lat, lng) {
-        if (!(window.kakao && window.kakao.maps)) return;
-        const container = document.getElementById('map');
-        const center = new kakao.maps.LatLng(lat, lng);
-        const map = new kakao.maps.Map(container, {
-            center: center,
-            level: 3
-        });
-        new kakao.maps.Marker({ position: center, map });
-    }
-
-    /* =========================================================
-       API 연동
-    ========================================================= */
-    // 구장 상세 정보
-    async function fetchStadiumDetail(stadiumId) {
-        const res = await fetch('/api/stadiums');
-        const list = await res.json();
-        return list.find(s => s.stadiumId == stadiumId);
-    }
-
-    // 경기 목록
-    async function fetchMatches(stadiumId) {
-        const res = await fetch(`/api/matchrooms/stadium/${stadiumId}`);
-        return res.json();
-    }
-
-    /* =========================================================
-       경기 목록 렌더링 (roomId 적용)
-    ========================================================= */
-    function renderMatchList(matches, selectedDate) {
-        const listEl = document.getElementById("match-list");
-        listEl.innerHTML = "";
-
-        const filtered = matches.filter(m => m.matchDate === selectedDate);
+    // ✅ [수정됨] 경기 목록 렌더링 함수 (상태값 반영)
+    function renderMatches(matches, date) {
+        const list = document.getElementById('match-list');
+        const filtered = matches.filter(m => m.matchDate === date);
 
         if (filtered.length === 0) {
-            listEl.innerHTML = `
-            <p style="color:#777; font-size:13px; padding:10px 0;">
-                선택한 날짜에 등록된 경기가 없습니다.
-            </p>`;
+            list.innerHTML = '<p style="color:#777; padding:10px 0;">등록된 경기가 없습니다.</p>';
             return;
         }
 
-        filtered
-            .sort((a, b) => a.matchTime.localeCompare(b.matchTime))
-            .forEach(m => {
-                const item = document.createElement("div");
-                item.className = "match-item";
+        // 시간순 정렬
+        filtered.sort((a, b) => a.matchTime.localeCompare(b.matchTime));
 
-                const statusText = m.status === 'closed' ? '마감' : '모집중';
-                const statusClass = m.status === 'closed' ? 'closed' : 'open';
+        list.innerHTML = filtered.map(m => {
+            // 'CLOSED' 상태인지 확인
+            const isClosed = (m.status === 'CLOSED' || m.status === 'closed');
+            const statusText = isClosed ? '모집 마감' : '모집중';
+            const statusClass = isClosed ? 'closed' : 'open';
 
-                item.innerHTML = `
+            return `
+            <div class="match-item" onclick="location.href='/schedule/detail/${m.roomId}'">
                 <div class="match-item-time">${m.matchTime}</div>
                 <div class="match-item-meta">
-                    최대인원: ${m.maxPlayers}명
-                    · <span class="match-status ${statusClass}">${statusText}</span>
+                    최대인원: ${m.maxPlayers}명 ·
+                    <span class="match-status ${statusClass}">${statusText}</span>
                 </div>
-            `;
-
-                // ⭐ 클릭 시 상세페이지 이동 (roomId 사용)
-                item.addEventListener("click", () => {
-                    window.location.href = `/schedule/detail/${m.roomId}`;
-                });
-
-                listEl.appendChild(item);
-            });
+            </div>`;
+        }).join('');
     }
 
-    /* =========================================================
-       WebSocket (STOMP)
-    ========================================================= */
-    let stompClient = null;
-    let allMatches = [];
-
-    function connectMatchWebSocket(stadiumId) {
-        const socket = new SockJS('/ws');
-        stompClient = Stomp.over(socket);
-
-        stompClient.connect({}, () => {
-            console.log("WebSocket 연결 성공");
-
-            // stadiumId별 구독
-            stompClient.subscribe(`/topic/matches/${stadiumId}`, (message) => {
-                const newMatch = JSON.parse(message.body);
-                console.log("실시간 경기 수신:", newMatch);
-
-                allMatches.push(newMatch);
-
-                const filterDate = document.getElementById('match-date-filter').value;
-                renderMatchList(allMatches, filterDate);
-            });
-        }, err => console.error("WebSocket 연결 실패:", err));
+    function openMatchModal(show) {
+        document.getElementById('match-create-modal').style.display = show ? 'flex' : 'none';
     }
 
-    /* =========================================================
-       경기 생성 모달
-    ========================================================= */
-    function openMatchModal(isOpen) {
-        const modal = document.getElementById('match-create-modal');
-        if (isOpen) modal.classList.add('show');
-        else modal.classList.remove('show');
-    }
-
-    function setupTimeSelect() {
+    function setupTime() {
         const start = document.getElementById("startTime");
         const end = document.getElementById("endTime");
-        start.innerHTML = "";
-        end.innerHTML = "";
-
-        for (let i = 0; i < 24; i++) {
-            const t = `${String(i).padStart(2, '0')}:00`;
-            start.innerHTML += `<option value="${t}">${t}</option>`;
-            end.innerHTML += `<option value="${t}">${t}</option>`;
+        start.innerHTML = ""; end.innerHTML = "";
+        for(let i=0; i<24; i++) {
+            const t = `${i < 10 ? '0'+i : i}:00`;
+            start.innerHTML += `<option>${t}</option>`;
+            end.innerHTML += `<option>${t}</option>`;
         }
-        start.value = "19:00";
-        end.value = "20:00";
+        start.value = "19:00"; end.value = "20:00";
     }
 
     async function submitMatchForm() {
-        let stadiumId = new URLSearchParams(window.location.search).get('id');
-
-        if (!stadiumId || stadiumId === "null") {
-            const parts = window.location.pathname.split("/");
-            stadiumId = parts[parts.length - 1];
-        }
-
-        const matchDate = document.getElementById('matchDate').value;
-        const startTime = document.getElementById('startTime').value;
-        const endTime = document.getElementById('endTime').value;
-
-        if (!matchDate || startTime >= endTime) {
-            alert("❌ 날짜/시간 선택이 잘못되었습니다.");
-            return;
-        }
-
-        const hostId = Number(localStorage.getItem('userId') || 11);
+        const hostId = localStorage.getItem('userId');
+        if(!hostId) { alert("로그인 정보가 없습니다."); location.href='/login'; return; }
 
         const req = {
-            stadiumId: Number(stadiumId),
-            hostId,
-            matchDate,
-            matchTime: startTime,
+            stadiumId: Number(document.getElementById('stadiumId').value),
+            hostId: Number(hostId),
+            matchDate: document.getElementById('matchDate').value,
+            matchTime: document.getElementById('startTime').value,
             maxPlayers: 10,
             level: "초급"
         };
 
         const res = await fetch('/api/matchrooms', {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(req)
         });
 
-        if (!res.ok) {
-            alert("❌ 경기 생성 실패");
-            return;
+        if(res.ok) {
+            alert("경기 생성 완료!");
+            openMatchModal(false);
+        } else {
+            alert("생성 실패");
         }
-
-        alert("경기가 성공적으로 개설되었습니다!");
-        openMatchModal(false);
-
-        allMatches = await fetchMatches(stadiumId);
-        const filterDate = document.getElementById('match-date-filter').value;
-        renderMatchList(allMatches, filterDate);
     }
 
+    window.openMatchModal = openMatchModal;
     window.submitMatchForm = submitMatchForm;
-
-    /* =========================================================
-       페이지 초기 로드
-    ========================================================= */
-    document.addEventListener('DOMContentLoaded', async () => {
-
-        const stadiumId = new URLSearchParams(window.location.search).get('id');
-
-        // 기본 탭 → 경기 탭 활성화
-        document.getElementById('tab-btn-match').classList.add('active');
-        document.getElementById('tab-match').classList.add('active');
-
-        // 구장 상세 정보 로딩
-        const stadium = await fetchStadiumDetail(stadiumId);
-        document.getElementById('stadium-name').textContent = `${stadium.name} (ID: ${stadiumId})`;
-        document.getElementById('stadium-address').textContent = stadium.address;
-        document.getElementById('stadium-contact').textContent = stadium.contact || "-";
-        document.getElementById('stadium-fee').textContent = stadium.fee || "-";
-        document.getElementById('stadium-size').textContent = stadium.size || "5 vs 5";
-
-        // 지도 생성
-        if (stadium.latitude && stadium.longitude) {
-            initMap(stadium.latitude, stadium.longitude);
-        }
-
-        // 오늘 날짜 기본
-        const matchDateFilter = document.getElementById('match-date-filter');
-        const today = new Date().toISOString().split("T")[0];
-        matchDateFilter.value = today;
-        matchDateFilter.min = today;
-
-        // 경기 목록 로딩
-        allMatches = await fetchMatches(stadiumId);
-        renderMatchList(allMatches, today);
-
-        matchDateFilter.addEventListener('change', () => {
-            renderMatchList(allMatches, matchDateFilter.value);
-        });
-
-        // WebSocket 연결
-        connectMatchWebSocket(stadiumId);
-
-        /* 모달 열기 준비 */
-        document.getElementById('btn-create-match').addEventListener('click', (e) => {
-            e.preventDefault();
-            if (!localStorage.getItem('accessToken')) {
-                alert("로그인이 필요합니다.");
-                return (window.location.href = "/login");
-            }
-
-            setupTimeSelect();
-            document.getElementById('hostName').value =
-                localStorage.getItem('userNickname') || "로그인 사용자";
-            document.getElementById('stadiumName').value = stadium.name;
-            document.getElementById('stadiumId').value = stadiumId;
-
-            document.getElementById('matchDate').value = today;
-            document.getElementById('matchDate').min = today;
-
-            openMatchModal(true);
-        });
-
-        // 배경 클릭 시 모달 닫기
-        document.getElementById('match-create-modal').addEventListener('click', (e) => {
-            if (e.target.id === "match-create-modal") openMatchModal(false);
-        });
-    });
-
 </script>
 
 </body>
