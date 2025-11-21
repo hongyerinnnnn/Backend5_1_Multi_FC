@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     <style>
-        /* (style 태그 내용은 이전과 동일) */
+        /* (기존 CSS 스타일 유지) */
         .schedule-search-main {
             padding: 100px 40px 40px 40px;
             background-color: #f7f7f7;
@@ -110,9 +110,8 @@
             color: #6c5ce7;
             width: 16px;
         }
-        /* ⭐⭐ 추가: 생성자 아이콘 스타일 ⭐⭐ */
         .match-item-body p i.fa-crown {
-            color: #f39c12; /* 왕관은 눈에 띄는 노란색으로 */
+            color: #f39c12;
         }
 
         .match-item-card.closed .match-item-body .location i,
@@ -196,7 +195,7 @@
 
 <main class="schedule-search-main">
     <div class="search-container">
-        <h1 class="search-title">📅 경기일정 검색</h1>
+        <h1 class="search-title">📅 경기일정 검색 (내가 참가한 경기)</h1>
 
         <div class="filter-section">
             <input type="date" id="filter-date">
@@ -329,14 +328,9 @@
         { value: '울산광역시', text: '울산광역시' }
     ];
 
-    // ⭐⭐ ERD 반영: 더미 매치 데이터 (특별시/광역시 위치로 재정의) ⭐⭐
-    const MOCK_MATCHES = [
-        { id: 1, date: "2025-11-01 (토) 19:00", location: "서울특별시 강남 풋살장", creator: "캡틴손", current: 8, max: 10, status: "open", type: "팀 매칭", skill: "중급", amenities: ["샤워 가능", "주차 가능"] },
-        { id: 2, date: "2025-11-03 (월) 20:00", location: "부산광역시 서면 풋살장", creator: "운영진", current: 12, max: 12, status: "closed", type: "개인 매칭", skill: "고급", amenities: ["주차 가능"] },
-        { id: 3, date: "2025-11-05 (수) 21:00", location: "인천광역시 연수구 풋살파크", creator: "구원투수", current: 5, max: 12, status: "open", type: "팀 매칭", skill: "초급", amenities: ["샤워 가능"] },
-        { id: 4, date: "2025-11-10 (월) 19:00", location: "대전광역시 유성구 풋살장", creator: "테스터", current: 8, max: 10, status: "open", type: "팀 매칭", skill: "중급", amenities: ["샤워 가능", "주차 가능"] },
-    ];
-
+    let allMySchedules = [];
+    let currentUserId = null;
+    let currentUserName = null;
 
     // ⭐⭐ 매치 목록 렌더링 함수 ⭐⭐
     function renderMatchList(matches) {
@@ -358,14 +352,16 @@
             card.className = `match-item-card ${statusClass}`;
             card.dataset.matchId = match.id;
 
-            // ⭐⭐ 유형/실력/편의 시설 문구 제거 ⭐⭐
+            const isHost = match.creator === currentUserName;
+            const creatorDisplay = isHost ? '나 (Host)' : match.creator;
+
             card.innerHTML = `
                 <div class="match-item-header">
                     <span class="date">${match.date}</span>
                 </div>
                 <div class="match-item-body">
                     <p style="font-size: 14px; color: #6c5ce7; font-weight: 600; margin-bottom: 12px;">
-                        <i class="fas fa-crown" style="margin-right: 5px;"></i> 생성자: ${match.creator}
+                        <i class="fas fa-crown" style="margin-right: 5px;"></i> 생성자: ${creatorDisplay}
                     </p>
                     <p class="location">
                         <i class="fas fa-map-marker-alt"></i>
@@ -385,22 +381,65 @@
         });
     }
 
-    // ⭐⭐ 수정: 검색 실행 함수 (단일 지역/상태 필터링) ⭐⭐
+    // ⭐⭐ 새로운 함수: 서버에서 내 스케줄 목록을 가져옴 ⭐⭐
+    async function fetchMySchedules() {
+        const userId = localStorage.getItem('userId');
+        const userName = localStorage.getItem('userNickname');
+
+        if (!userId) {
+            console.error("User ID not found in localStorage.");
+            return [];
+        }
+        currentUserId = Number(userId);
+        currentUserName = userName;
+
+        try {
+            // ⭐ 백엔드 API 호출 (User ID를 Query Param으로 전달)
+            const response = await fetch(`/api/matchrooms/my-schedules?userId=${userId}`);
+
+            if (!response.ok) {
+                console.error("Failed to fetch schedules:", response.statusText);
+                document.getElementById('match-list-container').innerHTML = `<p style="color:red; text-align:center;">경기 목록을 불러오는 중 오류가 발생했습니다. (API ${response.status})</p>`;
+                return [];
+            }
+
+            const rawMatches = await response.json();
+
+            // ⭐️ 서버 DTO를 프론트엔드 렌더링 형식에 맞게 변환
+            allMySchedules = rawMatches.map(match => ({
+                id: match.roomId,
+                date: `${match.matchDate} (${match.matchTime})`,
+                location: match.stadiumName || '구장 정보 없음',
+                creator: match.hostNickname || ('Host ID: ' + match.hostId),
+                current: match.currentPlayers || 0,
+                max: match.maxPlayers,
+                status: match.status.toLowerCase() === 'closed' ? 'closed' : 'open',
+            }));
+
+            return allMySchedules;
+
+        } catch (error) {
+            console.error("API call error:", error);
+            document.getElementById('match-list-container').innerHTML = `<p style="color:red; text-align:center;">네트워크 연결 중 오류 발생.</p>`;
+            return [];
+        }
+    }
+
+    // ⭐⭐ 수정: 검색 실행 함수 (서버에서 받은 데이터 기반으로 필터링) ⭐⭐
     function performSearch() {
-        const date = document.getElementById('filter-date').value;
-        const region = document.getElementById('filter-region').value; // 특별시/광역시 값
-        const status = document.getElementById('filter-status').value; // 상태 값
+        const dateFilterValue = document.getElementById('filter-date').value;
+        const region = document.getElementById('filter-region').value;
+        const status = document.getElementById('filter-status').value;
 
-        let filtered = MOCK_MATCHES;
+        let filtered = allMySchedules;
 
-        // 1. 날짜 필터
-        if (date) {
-            filtered = filtered.filter(match => match.date.includes(date));
+        // 1. 날짜 필터 (2025-11-21 형태로 필터링)
+        if (dateFilterValue) {
+            filtered = filtered.filter(match => match.date.includes(dateFilterValue));
         }
 
         // 2. 지역 (특별시/광역시) 필터
         if (region && region !== '전체지역') {
-            // location이 '서울특별시' 등으로 시작하는지 확인
             filtered = filtered.filter(match => match.location.startsWith(region));
         }
 
@@ -442,9 +481,13 @@
             if (navLogoutLink) navLogoutLink.parentElement.style.display = 'none';
         }
 
+        // ⭐️⭐️ 초기 로드 시 서버에서 데이터를 가져옵니다.
+        const schedules = await fetchMySchedules();
+
         // 검색 필터 초기화 및 이벤트 바인딩
         const dateFilter = document.getElementById('filter-date');
         if (dateFilter) {
+            // 오늘 날짜로 초기화
             dateFilter.valueAsDate = new Date();
         }
 
@@ -455,8 +498,7 @@
 
         const regionFilter = document.getElementById('filter-region');
 
-        // 1. 지역 옵션을 채웁니다. (중복 방지)
-        // HTML에 '전체지역' 옵션이 이미 있으므로, JS는 METRO_CITIES만 추가합니다.
+        // 1. 지역 옵션을 채웁니다.
         METRO_CITIES.forEach(city => {
             const option = document.createElement('option');
             option.value = city.value;
@@ -465,7 +507,7 @@
         });
 
         // 초기 로드 시 전체 목록 표시
-        renderMatchList(MOCK_MATCHES);
+        renderMatchList(schedules);
     });
 </script>
 </body>
