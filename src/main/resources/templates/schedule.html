@@ -328,6 +328,18 @@
         { value: '울산광역시', text: '울산광역시' }
     ];
 
+    // ⭐ [추가] 지역 필터링을 위한 단축 이름 맵핑 (JS 로직 개선)
+    const REGION_SHORT_NAMES = {
+        '서울특별시': '서울',
+        '부산광역시': '부산',
+        '대구광역시': '대구',
+        '인천광역시': '인천',
+        '광주광역시': '광주',
+        '대전광역시': '대전',
+        '울산광역시': '울산',
+    };
+
+
     let allMySchedules = [];
     let currentUserId = null;
     let currentUserName = null;
@@ -365,7 +377,7 @@
                     </p>
                     <p class="location">
                         <i class="fas fa-map-marker-alt"></i>
-                        ${match.location}
+                        ${match.stadiumName} (${match.location})
                     </p>
 
                     <p class="status">
@@ -394,7 +406,6 @@
         currentUserName = userName;
 
         try {
-            // ⭐ 백엔드 API 호출 (User ID를 Query Param으로 전달)
             const response = await fetch(`/api/matchrooms/my-schedules?userId=${userId}`);
 
             if (!response.ok) {
@@ -409,7 +420,10 @@
             allMySchedules = rawMatches.map(match => ({
                 id: match.roomId,
                 date: `${match.matchDate} (${match.matchTime})`,
-                location: match.stadiumName || '구장 정보 없음',
+                // location에 stadiumAddress (전체 주소)를 저장 (필터링 기준)
+                location: match.stadiumAddress || '주소 정보 없음',
+                // display용 구장 이름 (카드에 표시)
+                stadiumName: match.stadiumName || '구장 정보 없음',
                 creator: match.hostNickname || ('Host ID: ' + match.hostId),
                 current: match.currentPlayers || 0,
                 max: match.maxPlayers,
@@ -425,7 +439,7 @@
         }
     }
 
-    // ⭐⭐ 수정: 검색 실행 함수 (서버에서 받은 데이터 기반으로 필터링) ⭐⭐
+    // ⭐⭐ 수정: 검색 실행 함수 (지역 필터링 로직 개선) ⭐⭐
     function performSearch() {
         const dateFilterValue = document.getElementById('filter-date').value;
         const region = document.getElementById('filter-region').value;
@@ -433,14 +447,20 @@
 
         let filtered = allMySchedules;
 
-        // 1. 날짜 필터 (2025-11-21 형태로 필터링)
+        // 1. 날짜 필터
         if (dateFilterValue) {
             filtered = filtered.filter(match => match.date.includes(dateFilterValue));
         }
 
-        // 2. 지역 (특별시/광역시) 필터
+        // 2. 지역 (특별시/광역시) 필터: 단축명 매핑 사용
         if (region && region !== '전체지역') {
-            filtered = filtered.filter(match => match.location.startsWith(region));
+            // 긴 지역명(예: '서울특별시')을 주소 데이터의 짧은 시작명(예: '서울')으로 변환
+            const shortRegion = REGION_SHORT_NAMES[region] || region.substring(0, 2);
+
+            filtered = filtered.filter(match =>
+                // match.location (전체 주소)가 변환된 짧은 지역명으로 시작하는지 검사
+                match.location.startsWith(shortRegion)
+            );
         }
 
         // 3. 상태 필터
