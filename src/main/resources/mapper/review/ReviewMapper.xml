@@ -28,7 +28,7 @@
             r.user_id,
             r.rating,
             r.content,
-            u.nickname,  DATE_FORMAT(r.created_at, '%Y-%m-%d') AS created_at
+            u.nickname, DATE_FORMAT(r.created_at, '%Y-%m-%d') AS created_at
         FROM
             Review r
                 JOIN
@@ -43,7 +43,8 @@
             SELECT 1
             FROM Match_Room mr
             WHERE mr.stadium_id = #{stadiumId}
-              AND mr.status = 'CLOSED'
+              -- 매치 종료 시간 (match_date + end_time)이 현재 시간(NOW())보다 이전인지 확인
+              AND STR_TO_DATE(CONCAT(mr.match_date, ' ', mr.end_time), '%Y-%m-%d %H:%i') &lt; NOW()
               AND (
                 mr.host_id = #{userId}
                     OR mr.room_id IN (
@@ -65,7 +66,9 @@
     <select id="findPendingReviewStadiumIds" resultType="long">
         SELECT DISTINCT mr.stadium_id
         FROM Match_Room mr
-        WHERE mr.status = 'CLOSED'
+        WHERE
+          -- 매치 종료 시간 (match_date + end_time)이 현재 시간(NOW())보다 이전인지 확인
+            STR_TO_DATE(CONCAT(mr.match_date, ' ', mr.end_time), '%Y-%m-%d %H:%i') &lt; NOW()
           AND (
             mr.host_id = #{userId}
                 OR mr.room_id IN (
