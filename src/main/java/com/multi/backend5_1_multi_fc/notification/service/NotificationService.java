@@ -33,9 +33,9 @@ public class NotificationService {
         //WebSocket 실시간 전송
         //userId에 해당하는 사용자의 /user/{userId}/queue/notifications로 메세지 전송 <- setUserDestinationPrefix("/user") 설정으로 인해 /user 접두사가 자동으로 붙음
         simpMessagingTemplate.convertAndSendToUser(
-                String.valueOf(userId),             // 대상 사용자 ID
-                "/queue/notifications",             // 구독 경로
-                notification                        // 전송할 데이터
+                String.valueOf(userId),           // 대상 사용자 ID
+                "/queue/notifications",          // 구독 경로
+                notification                     // 전송할 데이터
         );
     }
 
@@ -155,7 +155,7 @@ public class NotificationService {
             // 새 알림 생성
             NotificationDto notification = NotificationDto.builder()
                     .userId(userId)
-                    .type("댓글")           // 프론트 notif.type === '댓글'
+                    .type("댓글")         // 프론트 notif.type === '댓글'
                     .referenceId(postId)    // 게시글 상세로 이동할 postId
                     .content("내 게시글에 새로운 댓글 1건")
                     .isRead(false)
@@ -176,7 +176,7 @@ public class NotificationService {
     public void createReplyNotification(Long userId, Long postId) {
         NotificationDto notification = NotificationDto.builder()
                 .userId(userId)
-                .type("대댓글")          // 프론트 notif.type === '대댓글'
+                .type("대댓글")      // 프론트 notif.type === '대댓글'
                 .referenceId(postId)
                 .content("내 댓글에 새로운 대댓글이 달렸습니다.")
                 .isRead(false)
@@ -191,6 +191,35 @@ public class NotificationService {
                 notification
         );
     }
+
+    // ⭐⭐⭐ [수정] 경기 후기 알림 일괄 전송 (referenceId로 stadiumId를 사용) ⭐⭐⭐
+    public void sendReviewNotificationForMatch(Long stadiumId, List<Long> userIds) {
+        String content = "경기 후기를 남겨주세요! (경기장 ID: " + stadiumId + ")";
+        String type = "후기"; // ⭐⭐ 프론트에서 notif.type === '후기'로 인식
+
+        for (Long userId : userIds) {
+            // 알림 생성
+            NotificationDto notification = NotificationDto.builder()
+                    .userId(userId)
+                    .content(content)
+                    .type(type)
+                    .referenceId(stadiumId) // ⭐ stadiumId를 referenceId로 사용하여 프론트에서 바로 사용
+                    .isRead(false)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            // DB 저장
+            notificationDao.insert(notification);
+
+            // WebSocket 실시간 전송
+            simpMessagingTemplate.convertAndSendToUser(
+                    String.valueOf(userId),
+                    "/queue/notifications",
+                    notification
+            );
+        }
+    }
+    // ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐
 
     // "댓글 N건" 형태에서 N 뽑아내기
     private int extractCommentCount(String content) {

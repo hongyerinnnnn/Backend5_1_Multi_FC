@@ -28,11 +28,12 @@
             r.user_id,
             r.rating,
             r.content,
-            u.nickname, DATE_FORMAT(r.created_at, '%Y-%m-%d') AS created_at
+            u.nickname,
+            DATE_FORMAT(r.created_at, '%Y-%m-%d') AS created_at
         FROM
             Review r
-                JOIN
-            User u ON r.user_id = u.user_id WHERE
+                JOIN User u ON r.user_id = u.user_id
+        WHERE
             r.stadium_id = #{stadiumId}
         ORDER BY
             r.created_at DESC
@@ -43,15 +44,12 @@
             SELECT 1
             FROM Match_Room mr
             WHERE mr.stadium_id = #{stadiumId}
-              -- ✨ [추가된 조건]: 경기가 취소(CANCELED)되지 않은 경우만 확인
               AND mr.status NOT IN ('CANCELED')
-              -- 매치 종료 시간 (match_date + end_time)이 현재 시간(NOW())보다 이전인지 확인
               AND STR_TO_DATE(CONCAT(mr.match_date, ' ', mr.end_time), '%Y-%m-%d %H:%i') &lt; NOW()
               AND (
                 mr.host_id = #{userId}
                     OR mr.room_id IN (
                     SELECT mp.room_id FROM Match_Participant mp
-                    -- ⭐ 참가자 상태가 '확정'인 경우만 유효 ⭐
                     WHERE mp.user_id = #{userId} AND mp.status = '확정'
                 )
                 )
@@ -70,10 +68,8 @@
         SELECT DISTINCT mr.stadium_id
         FROM Match_Room mr
         WHERE
-          -- ✨ [추가된 조건]: 경기가 취소(CANCELED)되지 않은 경우만 확인
             mr.status NOT IN ('CANCELED')
           AND
-          -- 매치 종료 시간 (match_date + end_time)이 현재 시간(NOW())보다 이전인지 확인
             STR_TO_DATE(CONCAT(mr.match_date, ' ', mr.end_time), '%Y-%m-%d %H:%i') &lt; NOW()
           AND (
             mr.host_id = #{userId}
@@ -82,7 +78,6 @@
                 WHERE mp.user_id = #{userId} AND mp.status = '확정'
             )
             )
-          -- 아직 후기를 작성하지 않은 구장만 포함
           AND mr.stadium_id NOT IN (
             SELECT r.stadium_id FROM Review r WHERE r.user_id = #{userId}
         )
@@ -93,7 +88,8 @@
         SET
             rating = #{rating},
             content = #{content},
-            updated_at = CURRENT_TIMESTAMP  WHERE
+            updated_at = CURRENT_TIMESTAMP
+        WHERE
             review_id = #{reviewId} AND user_id = #{userId}
     </update>
 
