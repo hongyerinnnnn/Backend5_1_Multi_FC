@@ -16,6 +16,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -58,13 +60,37 @@ public class SecurityConfig {
                                 "/schedule", "/schedule/add", "/schedule/detail/**", "/schedule/private/detail",
                                 "/community", "/community/write", "/community/detail/**",
                                 "/reviews/write",
-                                "/team/create", "/team/manage", "/team/invite", "/team-edit"
+                                "/team/create", "/team/manage", "/team/invite", "/team-edit",
+                                "/api/stats/matching-rate/me"
                         ).permitAll()
+
+                        //[추가] 준호님 요청
+                        .requestMatchers("/chat", "/chat/**").permitAll()
+                        .requestMatchers("/chatroom/**").permitAll()
+                        .requestMatchers("/api/chat/**").permitAll()
+                        .requestMatchers("/notifications","/notifications/**").permitAll()
+                        .requestMatchers("/api/notifications/**").permitAll()
+                        .requestMatchers("/api/users/me", "/api/user/**").permitAll()
 
                         /* =============================
                          *   4) 나머지는 인증 필요
                          * ============================= */
                         .anyRequest().authenticated()
+                )
+
+
+                // (⭐️ 5. [신규 기능] OAuth2 소셜 로그인 설정 추가)
+                .oauth2Login(oauth2 -> oauth2
+                        // (1) 소셜 로그인을 위한 우리 커스텀 로그인 페이지
+                        .loginPage("/login")
+                        // (2) 로그인 성공 시 실행할 서비스 (여기서 이메일 체크)
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        // (3) 로그인 성공 후 처리할 핸들러 (여기서 /register 또는 / 로 분기)
+                        .successHandler(oAuth2LoginSuccessHandler)
+                        // (4) 로그인 실패 시
+                        .failureUrl("/login?error=true")
                 )
 
                 /* JWT 필터 적용 */

@@ -1,16 +1,25 @@
 package com.multi.backend5_1_multi_fc.user.controller;
 
+import com.multi.backend5_1_multi_fc.security.CustomUserDetails;
 import com.multi.backend5_1_multi_fc.user.dto.UserDto;
 import com.multi.backend5_1_multi_fc.user.service.UserService;
 import com.multi.backend5_1_multi_fc.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -25,9 +34,6 @@ public class UserController {
             @ModelAttribute UserDto userDto,
             @RequestParam(value = "profile_image_file", required = false) MultipartFile profileImageFile
     ) {
-        System.out.println("[요청 도착] DTO: " + userDto);
-        System.out.println("[요청 도착] 파일: " + (profileImageFile != null ? profileImageFile.getOriginalFilename() : "없음"));
-
         try {
             userService.signup(userDto, profileImageFile);
             return new ResponseEntity<>("회원가입 성공", HttpStatus.CREATED);
@@ -42,20 +48,12 @@ public class UserController {
     // --- [로그인 기능 수정] ---
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
-        System.out.println("🔥🔥🔥 /api/users/login 요청 도착! 🔥🔥🔥");
-        System.out.println("payload: " + payload);
-
         String username = payload.get("username");
         String rawPassword = payload.get("password");
-
-        System.out.println("username: " + username);
-        System.out.println("password: " + rawPassword);
 
         try {
             // 1. 서비스로 아이디/비번을 보내 인증 요청
             UserDto user = userService.login(username, rawPassword);
-
-            System.out.println("userService.login() 결과: " + (user != null ? "성공" : "실패"));
 
             if (user != null) {
                 // 2. 로그인 성공
@@ -65,15 +63,14 @@ public class UserController {
 
                 String realToken = jwtUtil.generateToken(user.getUsername());
 
+                // 3. 프론트엔드로 토큰과 사용자 정보 반환
                 Map<String, Object> response = new HashMap<>();
                 response.put("accessToken", realToken);
                 response.put("user", user);
 
-                System.out.println("✅ 로그인 성공 응답 반환");
                 return ResponseEntity.ok(response);
 
             } else {
-                System.out.println("❌ 로그인 실패: 아이디 또는 비밀번호 불일치");
                 return new ResponseEntity<>("아이디 또는 비밀번호가 올바르지 않습니다.", HttpStatus.UNAUTHORIZED);
             }
         } catch (Exception e) {
@@ -180,4 +177,82 @@ public class UserController {
             return new ResponseEntity<>("비밀번호 변경 중 서버 오류 발생", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인되지 않았습니다.");
+        }
+
+        UserDto user = userService.getUserProfile(userDetails.getUsername());
+
+        // 보안을 위해 비밀번호는 제외하고 필요한 정보만 Map으로 반환
+        Map<String, Object> response = new HashMap<>();
+        response.put("userId", user.getUserId());
+        response.put("username", user.getUsername());
+        response.put("nickname", user.getNickname());
+        response.put("email", user.getEmail());
+        response.put("profileImage", user.getProfileImage());
+        return ResponseEntity.ok(response);
+    }
+
+    // ✅ 수정: /search 엔드포인트
+    @GetMapping("/search")
+    public ResponseEntity<List<UserDto>> searchUsersByNickname(
+            @RequestParam("nickname") String nickname) {
+
+        log.info("📡 /api/users/search 호출됨, nickname={}", nickname);
+
+        // ✅ 인증 확인
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            log.error("❌ 인증 정보가 없음");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            List<UserDto> users = userService.searchUsersByNickname(nickname);
+
+            // 보안: 비밀번호 제거
+            users.forEach(user -> {
+                user.setPassword(null);
+                user.setResetCode(null);
+                user.setResetCodeExpires(null);
+            });
+
+            log.info("✅ 검색 성공: {}명 조회됨", users.size());
+            return ResponseEntity.ok(users);
+
+        } catch (Exception e) {
+            log.error("❌ 사용자 검색 실패: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // ✅ 기존: /{userId} 엔드포인트 (인증 불필요하므로 그대로 유지)
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserDto> getUserProfile(@PathVariable("userId") Long userId) {
+        log.info("📡 /api/users/{} 호출됨", userId);
+
+        try {
+            UserDto user = userService.findUserById(userId);
+
+            // 보안: 민감 정보 제거
+            user.setPassword(null);
+            user.setResetCode(null);
+            user.setResetCodeExpires(null);
+            user.setEmail(null); // 이메일도 숨김
+
+            log.info("✅ 프로필 조회 성공: nickname={}", user.getNickname());
+            return ResponseEntity.ok(user);
+
+        } catch (Exception e) {
+            log.error("❌ 프로필 조회 실패: userId={}, error={}", userId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+
+
+
 }

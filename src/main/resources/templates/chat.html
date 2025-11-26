@@ -170,30 +170,76 @@
         .chat-input-area button:hover {
             background-color: #8e44ad;
         }
-
-        /* 메시지 버블 스타일 */
-        .message-bubble {
-            margin-bottom: 15px;
+        /* 각 메시지 묶음 */
+        .message-wrapper {
+            margin: 12px 0;
             display: flex;
+            flex-direction: column;
+        }
+
+        /* 정렬 */
+        .message-wrapper.other {
             align-items: flex-start;
         }
-        .message-bubble.mine {
-            justify-content: flex-end;
+
+        .message-wrapper.mine {
+            align-items: flex-end;
         }
-        .message-bubble.mine .message-content {
-            background-color: #ffe500;
-            color: #191919;
-            border-radius: 15px 15px 0 15px;
+
+        /* 닉네임 */
+        .message-nickname {
+            font-size: 13px;
+            color: #444;
+            margin-bottom: 3px;
+            margin-left: 4px;
+            font-weight: 600;
         }
-        .message-bubble.other {
+
+        /* 말풍선 + 시간 행 */
+        .bubble-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .bubble-row.other {
             justify-content: flex-start;
         }
-        .message-bubble.other .message-content {
-            background-color: white;
-            color: #333;
-            border-radius: 15px 15px 15px 0;
-            border: 1px solid #ddd;
+
+        .bubble-row.mine {
+            justify-content: flex-end;
         }
+
+        /* 말풍선 스타일 */
+        .message-bubble {
+            max-width: 250px;
+            padding: 9px 12px;
+            border-radius: 18px;
+            line-height: 1.4;
+            font-size: 14px;
+            word-break: break-word;
+        }
+
+        /* 상대 말풍선 */
+        .message-bubble.other {
+            background: #ffffff;
+            border: 1px solid #ddd;
+            color: #222;
+        }
+
+        /* 내 말풍선 (카톡 블루 계열) */
+        .message-bubble.mine {
+            background: #d2e4fc;
+            color: #111;
+        }
+
+        /* 시간 */
+        .message-time {
+            font-size: 11px;
+            color: #777;
+            margin-bottom: 15px;
+        }
+
         .message-text {
             padding: 10px 15px;
             max-width: 70%;
@@ -575,10 +621,12 @@
             color: white;
             font-size: 11px;
             font-weight: 700;
-            border-radius: 10px;
+            border-radius: 40px;
             padding: 3px 8px;
             flex-shrink: 0;
+            display: inline-block;
             min-width: 24px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.07);
             text-align: center;
         }
         /* ⭐⭐ 보강 끝 ⭐⭐ */
@@ -600,11 +648,14 @@
 <body>
 
 <header class="quick-menu">
-    <div class="logo"><a href="/">Multi FC</a></div> <div class="header-icons">
-    <button id="profile-menu-toggle" class="profile-icon" style="position: relative; display: none;"> <i class="fas fa-user-circle"></i> </button>
-    <div id="profile-menu" class="user-menu"></div>
-    <button id="menu-toggle" class="menu-toggle-btn"><i class="fas fa-bars"></i></button>
-</div>
+    <div class="logo"><a href="/">Multi FC</a></div>
+    <div class="header-icons">
+        <button id="profile-menu-toggle" class="profile-icon" style="position: relative; display: none;">
+            <i class="fas fa-user-circle"></i>
+        </button>
+        <div id="profile-menu" class="user-menu"></div>
+        <button id="menu-toggle" class="menu-toggle-btn"><i class="fas fa-bars"></i></button>
+    </div>
     <nav id="main-menu" class="main-nav">
         <ul>
             <li><a href="/"><i class="fas fa-home"></i> 메인 (Home)</a></li>
@@ -620,6 +671,7 @@
 </div>
 
 <main id="chat-main-wrapper" class="chat-main">
+    <!-- ✅ 사이드바: 채팅 목록 -->
     <div class="chat-sidebar">
         <div class="chat-header">
             채팅 목록
@@ -629,37 +681,46 @@
         </div>
 
         <div id="chat-type-tabs" class="chat-type-tabs">
-            <button data-type="public">전체 채팅</button>
+            <button data-type="public" class="active">전체 채팅</button>
             <button data-type="group">그룹 채팅</button>
             <button data-type="one-on-one">1:1 채팅</button>
         </div>
 
-        <div id="room-list-container" class="room-list-container">
-        </div>
+        <div id="room-list-container" class="room-list-container"></div>
     </div>
 
+    <!-- ✅ 메인 채팅 영역 -->
     <div class="chat-content-area">
+        <!-- 초기 안내 메시지 -->
         <div id="chat-welcome-message">
             <p>채팅 목록에서 방을 선택해주세요.</p>
         </div>
 
-        <div id="current-chat-room">
+        <!-- 채팅방 활성화 시 표시 -->
+        <div id="current-chat-room" style="display: none;">
+            <!-- ✅ 채팅방 헤더 -->
             <div id="chat-room-header" class="chat-header">
-
                 <div class="room-title-wrapper">
                     <span id="room-title">채팅방 제목</span>
-                    <div id="room-status-display" class="room-status-info">
+                    <!-- ✅ 참여자 수 및 타입 아이콘 -->
+                    <div id="room-status-display" class="room-status-info" style="display: none;">
                         <span id="room-type-icon"></span>
-                        <span id="room-participant-count">0/0</span>
+                        <span id="room-participant-count">0</span>
                     </div>
                 </div>
-                <button onclick="openParticipantList()" style="background:none; border:none; color:#6c5ce7; font-size:18px; cursor:pointer;" title="참여자 목록">
-                    <i class="fas fa-users"></i>
-                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="openParticipantList()" id="open-participant-btn" style="background:none; border:none; color:#6c5ce7; font-size:18px; cursor:pointer;" title="참여자 목록">
+                        <i class="fas fa-users"></i>
+                    </button>
+                    <button id="leave-room-btn" style="background:none; border:none; color:#e74c3c; font-size:18px; cursor:pointer; display:none;" title="채팅방 나가기">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
             </div>
 
+            <!-- ✅ 인라인 프로필 상세 (우측 슬라이드) -->
             <div id="inline-profile-detail" class="inline-profile-detail">
-                <button class="close-profile-btn" onclick="openInlineProfileDetail(false)">&times;</button>
+                <button class="close-profile-btn" onclick="openInlineProfileDetail(false)" id="close-inline-profile">&times;</button>
                 <div class="profile-info-content" style="text-align: center;">
                     <div style="margin-bottom: 10px; padding-top: 5px;">
                         <img id="profile-img-detail" src="/images/default-profile.png" alt="프로필 이미지" class="profile-detail-img">
@@ -674,34 +735,35 @@
                 </div>
             </div>
 
-            <div id="chat-messages-container" class="chat-messages">
-            </div>
+            <!-- ✅ 메시지 표시 영역 -->
+            <div id="chat-messages-container" class="chat-messages"></div>
 
+            <!-- ✅ 메시지 입력 영역 (인라인 이벤트 제거) -->
             <div class="chat-input-area">
-                <input type="text" id="message-input" placeholder="메시지를 입력하세요..." onkeypress="if(event.keyCode===13) sendMessage()" maxlength="500">
-                <button onclick="sendMessage()">전송</button>
+                <input type="text" id="message-input" placeholder="메시지를 입력하세요..." maxlength="500">
+                <button onclick="sendMessage()" id="send-message-btn">전송</button>
             </div>
         </div>
-
     </div>
 </main>
 
-<div id="participant-sidebar">
+<!-- ✅ 참여자 사이드바 (우측) -->
+<div id="participant-sidebar" class="participant-sidebar">
     <div class="sidebar-header">
         <span id="sidebar-room-name">참여자 목록</span>
-        <button class="sidebar-close-btn" onclick="openParticipantList(false)">
+        <button class="sidebar-close-btn" onclick="openParticipantList(false)" id="close-participant-sidebar">
             <i class="fas fa-times"></i>
         </button>
     </div>
-    <div id="participant-list-container" class="participant-list-container">
-    </div>
+    <div id="participant-list-container" class="participant-list-container"></div>
     <div style="padding: 15px; border-top: 1px solid #eee;">
-        <button class="btn-create invite-action-btn" style="width: 100%;" onclick="openInviteModal()">
+        <button class="btn-create invite-action-btn" style="width: 100%;" onclick="openInviteModal()" id="open-invite-modal-btn">
             <i class="fas fa-user-plus"></i> 친구 초대하기
         </button>
     </div>
 </div>
 
+<!-- ✅ 모달: 새 채팅방 생성 -->
 <div id="new-chat-modal" class="modal-overlay">
     <div class="modal-content">
         <h2>새 채팅방 시작</h2>
@@ -713,69 +775,56 @@
             <option value="public">전체 채팅 (전체 공개)</option>
         </select>
 
-        <div id="max-participants-group" style="display: none;">
-            <label for="new-chat-max-participants" style="margin-top: 10px;">최대 참여 인원 (그룹 채팅)</label>
+        <div id="max-participants-group" style="display: none; margin-top: 10px;">
+            <label for="new-chat-max-participants">최대 참여 인원 (그룹 채팅)</label>
             <input type="number" id="new-chat-max-participants" min="3" max="50" value="10">
         </div>
+
         <label for="new-chat-title" style="margin-top: 10px;">채팅방 이름</label>
         <input type="text" id="new-chat-title" placeholder="채팅방 제목을 입력하세요">
 
         <div id="recipient-input-group">
-            <label for="new-chat-recipient" style="margin-top: 10px;">상대방 닉네임 (1:1 채팅)</label>
+            <label for="new-chat-recipient" style="margin-top: 10px;">상대방 닉네임</label>
             <input type="text" id="new-chat-recipient" placeholder="채팅할 상대방의 닉네임을 입력하세요">
-            <p id="chat-form-info" style="font-size: 13px; color: #777; margin-bottom: 20px;">1:1 채팅은 상대방 닉네임이 필수입니다.</p>
-        </div>
-
-
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="openNewChatModal(false)">취소</button>
-            <button class="btn-create" onclick="createNewChat()">채팅 시작</button>
-        </div>
-    </div>
-</div>
-
-<div id="profile-modal" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
-        <h2 id="profile-username-title">사용자 프로필</h2>
-        <div id="profile-details-content">
-            <p>닉네임: <strong id="profile-nickname">...</strong></p>
-            <p>포지션: <strong id="profile-position">...</strong></p>
-            <p>지역: <strong id="profile-location">...</strong></p>
-            <p style="margin-top: 15px; font-size: 14px; color: #e74c3c;">
-                (실제 DB 정보 연동 필요)
+            <p id="chat-form-info" style="font-size: 13px; color: #777; margin-top: 5px;">
+                1:1 채팅은 상대방 닉네임이 필수입니다.
             </p>
         </div>
-        <div class="modal-actions" style="justify-content: center;">
-            <button class="btn-cancel" onclick="openProfileModal(false)">닫기</button>
+
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="openNewChatModal(false)" id="cancel-new-chat-btn">취소</button>
+            <button class="btn-create" onclick="createNewChat()" id="create-new-chat-btn">채팅 시작</button>
         </div>
     </div>
 </div>
 
+<!-- ✅ 모달: 친구 초대 -->
 <div id="invite-modal" class="modal-overlay">
     <div class="modal-content">
         <h2>친구 초대</h2>
-        <p id="invite-room-info">현재 방: <strong id="invite-room-name">...</strong> (인원 제한: <span id="invite-count-info">...</span>)</p>
+        <p id="invite-room-info" style="font-size: 14px; color: #555; margin-bottom: 15px;">
+            현재 방: <strong id="invite-room-name">...</strong>
+        </p>
 
-        <div id="friend-list-to-invite">
-        </div>
+        <div id="friend-list-to-invite" style="max-height: 300px; overflow-y: auto;"></div>
 
-        <div class="modal-actions" style="justify-content: space-between;">
+        <div class="modal-actions" style="justify-content: space-between; margin-top: 15px;">
             <p style="font-size: 14px; color: #555; margin: 0; align-self: center;">
                 <span id="selected-invite-count">0</span>명 선택됨
             </p>
             <div>
-                <button class="btn-cancel" onclick="openInviteModal(false)">취소</button>
-                <button class="btn-create" id="final-invite-btn" onclick="sendInvite()">초대하기</button>
+                <button class="btn-cancel" onclick="openInviteModal(false)" id="cancel-invite-btn">취소</button>
+                <button class="btn-create" onclick="sendInvite()" id="send-invite-btn">초대하기</button>
             </div>
         </div>
     </div>
 </div>
 
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
 <script>
+    console.log('✅ 스크립트 로드 시작');
     // --- (★공통★) 메뉴 토글 및 인증 로직 ---
     const menuToggle = document.getElementById('menu-toggle');
     const mainMenu = document.getElementById('main-menu');
@@ -806,9 +855,21 @@
     // 챗 클라이언트 로직 (WebSocket/STOMP)
     // ===========================================
 
+    //webSocket/Stomp
     let stompClient = null;
     let currentRoomId = null;
-    let myUsername = 'MyUser123';
+
+    //구독 관리
+    let roomSubscription = null;
+    let userQueueSubscription = null;
+
+    //사용자 정보
+    let myUserId = null;
+    let myUsername = null;
+    let currentUserId = null;
+    let currentNickname = null;
+
+    //DOM 요소
     const chatContainer = document.getElementById('chat-messages-container');
     const inputArea = document.getElementById('message-input');
     const roomTitleElement = document.getElementById('room-title');
@@ -818,23 +879,22 @@
     const participantSidebar = document.getElementById('participant-sidebar');
     const participantListContainer = document.getElementById('participant-list-container');
     const chatMainWrapper = document.getElementById('chat-main-wrapper'); // 메인 wrapper
+
+    //modal 요소
     const newChatModal = document.getElementById('new-chat-modal'); // 새 채팅 모달
-    const profileModal = document.getElementById('profile-modal'); // ★프로필 모달
     const inviteModal = document.getElementById('invite-modal'); // ★초대 모달
     const friendListToInvite = document.getElementById('friend-list-to-invite'); // ★초대 목록 컨테이너
     const selectedInviteCountElement = document.getElementById('selected-invite-count'); // ★선택 인원 수 표시
     let selectedInvitees = new Set(); // ★선택된 친구 Set
 
-    // ★★★ 추가된 변수 ★★★
+    // inline 프로필
     const inlineProfileDetail = document.getElementById('inline-profile-detail');
-    const chatContentArea = document.querySelector('.chat-content-area');
+    const chatContentArea = document.getElementById('chat-content-area');
     const roomStatusDisplay = document.getElementById('room-status-display');
     const roomParticipantCount = document.getElementById('room-participant-count');
     const roomTypeIcon = document.getElementById('room-type-icon');
-    const profileChatBtn = document.getElementById('profile-chat-btn');
-    const profileFriendBtn = document.getElementById('profile-friend-btn');
 
-    // ★모달 내 요소
+    // ★모달 내 입력 요소
     const newChatTypeSelect = document.getElementById('new-chat-type');
     const newChatTitleInput = document.getElementById('new-chat-title');
     const newChatRecipientInput = document.getElementById('new-chat-recipient');
@@ -843,76 +903,71 @@
 
     const RECONNECT_INTERVAL = 5000;
     let currentChatType = 'public'; // ★기본값 public으로 설정 (HTML 탭과 일치)
-    let nextChatRoomId = 300; // 새로운 방 ID 시작점
 
-    // --- 더미 데이터 (ERD 반영: unreadCount 추가) ---
-    const MOCK_ROOMS = {
-        'public': [
-            // ⭐⭐ unreadCount 추가 (ERD: Chat_Message.read_at 반영) ⭐⭐
-            { id: 201, name: '🚨 관리자 공지', lastMessage: '[공지] 매너 점수 시스템 개편 안내', participants: ['관리자', 'MyUser123', 'UserA', 'UserB', 'UserC', 'UserD', '캡틴손', '구원투수'], maxParticipants: 50, createdAt: '2025-10-20', unreadCount: 1 },
-            { id: 202, name: '📢 자유 수다방', lastMessage: '오늘 풋살화 샀는데 추천 좀 해주세요!', participants: ['MyUser123', '풋살매니아', '축구왕'], maxParticipants: 50, createdAt: '2025-11-01', unreadCount: 0 }
-        ],
-        'group': [
-            { id: 1, name: '⚽ 11/05 수원 풋살 (10명)', lastMessage: 'UserA: 네, 거기서 봬요!', participants: ['MyUser123 (방장)', 'UserA', 'UserB', 'UserC', 'UserD'], maxParticipants: 10, createdAt: '2025-10-28', unreadCount: 5 },
-            { id: 2, name: '📌 팀원 모집 - 캡틴손', lastMessage: '좋아요, 포지션은 DF 가능합니다.', participants: ['MyUser123 (방장)', '캡틴손', '구원투수'], maxParticipants: 12, createdAt: '2025-11-02', unreadCount: 0 }
-        ],
-        'one-on-one': [
-            { id: 101, name: '1:1 채팅 - 심판장 (운영진)니', lastMessage: '규정 위반 관련 문의 답변입니다.', participants: ['MyUser123', '심판장 (운영진)'], maxParticipants: 2, createdAt: '2025-09-01', unreadCount: 1 },
-            { id: 102, name: '1:1 채팅 - 수비수 구함', lastMessage: '이번 주말 경기 가능하세요?', participants: ['MyUser123', '수비수 구함'], maxParticipants: 2, createdAt: '2025-11-03', unreadCount: 2 }
-        ]
-    };
+    let token = localStorage.getItem('accessToken');
 
-    // ⭐⭐ 보강: MOCK_HISTORY 더미 채팅 내용 추가 ⭐⭐
-    const MOCK_HISTORY = {
-        201: [
-            { sender: '관리자', content: '🚨 [필독] 매너 점수 시스템이 개편됩니다. 공지사항을 확인해주세요.', timestamp: '오전 9:00' },
-            { sender: 'UserA', content: '공지 잘 읽었습니다! 매너 점수 관리 철저히 하겠습니다.', timestamp: '오전 9:05' }
-        ],
-        202: [
-            { sender: '풋살매니아', content: '오늘 풋살화 샀는데 추천 좀 해주세요! 아디다스 신상이 궁금해요.', timestamp: '오후 3:00' },
-            { sender: 'MyUser123', content: '저는 나이키 티엠포 사용 중인데, 발 편하고 좋아요!', timestamp: '오후 3:05' },
-            { sender: '축구왕', content: '저도 티엠포 추천합니다! 🤣', timestamp: '오후 3:10' }
-        ],
-        1: [
-            { sender: 'UserA', content: '경기 장소 혹시 변경된 건 없나요?', timestamp: '오전 10:00' },
-            { sender: 'MyUser123', content: '아닙니다, 그대로 서울 강남 풋살장입니다. 시간 맞춰 오세요!', timestamp: '오전 10:05' }
-        ],
-        2: [
-            { sender: 'OtherUser', content: '팀원 모집 보고 연락드렸습니다. DF 포지션 가능합니다.', timestamp: '오후 1:00' },
-            { sender: 'MyUser123', content: '좋습니다! 이번주 토요일 19시 참석 가능하신가요?', timestamp: '오후 1:05' }
-        ],
-        101: [
-            { sender: '심판장 (운영진)', content: '규정 위반 관련 문의 답변입니다. 해당 건은 경고 조치로 마무리됩니다.', timestamp: '오후 4:00' },
-            { sender: 'MyUser123', content: '빠른 답변 감사합니다.', timestamp: '오후 4:02' }
-        ],
-        102: [
-            { sender: '수비수 구함', content: '이번 주말 경기 가능하세요? 급하게 한 분 구합니다.', timestamp: '오후 7:00' },
-            { sender: 'MyUser123', content: '죄송합니다, 이번 주말은 선약이 있어요. 😭', timestamp: '오후 7:15' }
-        ]
-    };
-    // ⭐⭐ 보강 끝 ⭐⭐
+    if(!token) {
+        alert('로그인이 필요합니다.');
+        window.location.href = "/login";
+    }
 
+    //JWT 토큰 디코딩 함수
+    function parseJwt(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c){
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        } catch (e){
+            console.error('JWT 파싱 실패 :' , e);
+            return null;
+        }
+    }
 
-    const MOCK_PROFILES = {
-        'UserA': { nickname: 'UserA', position: 'FW', location: '서울 강남구', profilePic: '/images/mock_user_a.png' },
-        'UserB': { nickname: 'UserB', position: 'MF', location: '서울 서초구', profilePic: '/images/mock_user_b.png' },
-        '심판장 (운영진)': { nickname: '운영자', position: 'GK', location: '전국', profilePic: '/images/mock_admin.png' },
-        'MyUser123': { nickname: '나', position: 'DF', location: '서울 중구', profilePic: '/images/default-profile.png' },
-        '캡틴손': { nickname: '캡틴손', position: 'MF', location: '수원 영통구', profilePic: '/images/mock_captain.png' },
-        '구원투수': { nickname: '구원투수', position: 'DF', location: '성남 분당구', profilePic: '/images/mock_closer.png' },
-        '풋살매니아': { nickname: '풋살매니아', position: 'ALA', location: '인천', profilePic: '/images/default-profile.png' },
-        '축구왕': { nickname: '축구왕', position: 'PIVO', location: '강원', profilePic: '/images/default-profile.png' },
-    };
+    //JWT 사용자 정보 추출
+    function initUserInfo() {
+        token = localStorage.getItem('accessToken');
+        const payload = parseJwt(token);
+        if(!payload || !payload.sub) {
+            alert('유효하지 않은 토큰입니다. 다시 로그인 해주세요.');
+            localStorage.removeItem('accessToken');
+            window.location.href = "/login";
+            return;
+        }
 
-    const MOCK_FRIENDS = [
-        { name: '캡틴손', status: '온라인' },
-        { name: '구원투수', status: '오프라인' },
-        { name: '풋살매니아', status: '온라인' },
-        { name: 'UserE', status: '온라인' },
-        { name: 'UserF', status: '오프라인' }
-    ];
-    // ----------------------------------
+        fetch('/api/users/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+            .then(response => {
+                if(!response.ok) throw new Error('사용자 정보 조회 실패');
+                return response.json();
+            })
+            .then(user => {
+                currentUserId = user.userId;
+                currentNickname = user.nickname;
+                myUserId = user.userId;
+                myUsername = user.nickname;
+                console.log('현재 사용자:', {userId: currentUserId,nickname:currentNickname});
 
+                connect();
+
+                const defaultType = 'public';
+                const activeTab = document.querySelector(`[data-type="public"]`);
+                if(activeTab) activeTab.classList.add('active');
+                loadRoomList(defaultType);
+            })
+            .catch(error => {
+                console.error('사용자 정보 로드 실패:', error);
+                alert('사용자 정보를 불러올 수 없습니다.');
+                window.location.href = "/login";
+            });
+    }
+
+    //WebSocket 연결 관리
     function updateStatus(message, isError = true) {
         connectionStatus.textContent = message;
         connectionStatus.style.display = 'block';
@@ -926,31 +981,76 @@
         } else {
             connectionStatus.style.display = 'none';
             console.error("WebSocket 연결 실패. 5초 후 재시도합니다.");
-            return;
         }
     }
 
     function connect() {
         if (stompClient && stompClient.connected) {
-            console.log('Already connected.');
+            console.log('이미 연결 되어있습니다');
             return;
         }
 
         updateStatus("WebSocket 연결 시도 중...", true);
 
-        const socket = new SockJS('/ws');
+        const socket = new SockJS('/chat');
         stompClient = Stomp.over(socket);
         stompClient.debug = null;
 
-        stompClient.connect({}, onConnected, onError);
-    }
+        const headers = token ? { 'Authorization': `Bearer ${token}`  } : {};
 
+        stompClient.connect(headers, onConnected, onError);
+    }
     function onConnected() {
         console.log('WebSocket 연결 성공.');
         updateStatus("✅ 실시간 채팅 서버에 연결되었습니다.", false);
 
+        if (currentRoomId && !userQueueSubscription) {
+            try {
+                userQueueSubscription = stompClient.subscribe(`/user/queue/messages`, function (message) {
+                        const receivedMessage = JSON.parse(message.body);
+                        console.log('📨 개인 메시지 수신:', receivedMessage);
+                        handleReceivedMessage(receivedMessage);
+                    },{
+                        id : `user-queue-${currentRoomId}`}
+                );
+                console.log('개인 메세지 큐 구독 완료');
+            } catch (e) {
+                console.error('개인 큐 구독 실패 :' ,e);
+            }
+        }
         if (currentRoomId) {
             subscribeToRoom(currentRoomId);
+        }
+    }
+
+    function disconnect(){
+        console.log('🔌 WebSocket 연결 종료 시작');
+
+        if(userQueueSubscription) {
+            try {
+                userQueueSubscription.unsubscribe();
+                console.log('✅ 개인 큐 구독 해제 완료');
+            } catch (e) {
+                console.warn('개인 큐 구독 해제 실패:', e);
+            }
+            userQueueSubscription = null;
+        }
+
+        if (roomSubscription) {
+            try {
+                roomSubscription.unsubscribe();
+                console.log('✅ 방 구독 해제 완료');
+            } catch (e) {
+                console.warn('방 구독 해제 실패:', e);
+            }
+            roomSubscription = null;
+        }
+
+        if (stompClient && stompClient.connected) {
+            stompClient.disconnect(() => {
+                console.log('✅ STOMP 연결 완전 종료');
+                stompClient = null;
+            });
         }
     }
 
@@ -958,62 +1058,232 @@
         console.error('WebSocket 연결 오류: 재연결 시도', error);
         connectionStatus.style.display = 'none';
 
-        if (stompClient && stompClient.ws && stompClient.ws.readyState === WebSocket.OPEN) {
-            stompClient.disconnect(() => {
+        if(userQueueSubscription) {
+            userQueueSubscription = null;
+        }
+        if(roomSubscription) {
+            roomSubscription = null;
+        }
+        if(stompClient){
+            try {
+                if (stompClient.ws && stompClient.ws.readyState === WebSocket.OPEN) {
+                    stompClient.disconnect(() => {
+                        stompClient = null;
+                        setTimeout(connect, RECONNECT_INTERVAL);
+                    });
+                } else {
+                    stompClient = null;
+                    setTimeout(connect, RECONNECT_INTERVAL);
+                }
+            } catch (e) {
+                console.error('연결 종료 중 오류:', e);
                 stompClient = null;
                 setTimeout(connect, RECONNECT_INTERVAL);
-            });
+            }
         } else {
-            stompClient = null;
             setTimeout(connect, RECONNECT_INTERVAL);
         }
     }
 
+    function handleReceivedMessage(receivedMessage) {
+        console.log('📨 개인 메시지 수신:', receivedMessage);
+
+        if(receivedMessage.roomId === currentRoomId) {
+            displayMessage({
+                sender: receivedMessage.senderId,
+                senderNickname: receivedMessage.senderNickname,
+                content: receivedMessage.content,
+                timestamp : formatTimestamp(receivedMessage.sentAt || new Date()),
+            });
+        } else {
+            updateUnreadCount(receivedMessage.roomId);
+        }
+
+        updateLastMessageInList(receivedMessage.roomId, receivedMessage.content, receivedMessage.senderNickname);
+    }
+
+    function updateUnreadCount(roomId) {
+        if(roomId !== currentRoomId) {
+            const roomItem = document.querySelector(`.room-item-[data-room-id="${roomId}"]`);
+            if(roomItem){
+                let badge = roomItem.querySelector('.unread-badge');
+
+                if(!badge) {
+                    const actionContainer = roomItem.querySelector(('.room-item-actions'));
+                    if(actionContainer) {
+                        badge = document.createElement('span');
+                        badge.classList.add('unread-badge');
+                        badge.textContent = '1';
+                        actionContainer.insertBefore(badge, actionContainer.firstChild);
+                    }
+                } else {
+                    const currentCount = parseInt(badge.textContent) || 0;
+                    badge.textContent = currentCount + 1;
+                }
+            }
+        }
+    }
+
+    function updateLastMessageInList(roomId, content, senderNickname) {
+        const roomItem = document.querySelector(`.room-item-[data-room-id="${roomId}"]`);
+        if(roomItem) {
+            const roomInfo = roomItem.querySelector('.room-info');
+            if(roomInfo) {
+                let lastMessageDiv = roomInfo.querySelector('.last-message');
+                if(!lastMessageDiv) {
+                    lastMessageDiv = document.createElement('div');
+                    lastMessageDiv.className = 'last-message';
+                    lastMessageDiv.style.fontSize = '12px';
+                    lastMessageDiv.style.color = '#999';
+                    lastMessageDiv.style.marginTop = '4px';
+                    lastMessageDiv.style.overflow = 'hidden';
+                    lastMessageDiv.style.textOverflow = 'ellipsis';
+                    lastMessageDiv.style.whiteSpace = 'nowrap';
+                    roomInfo.appendChild(lastMessageDiv);
+                }
+                const preview = content.length > 30 ? content.substring(0, 30) + '...' : content;
+                lastMessageDiv.textContent = `${senderNickname}: ${preview}`;
+            }
+        }
+    }
+
+
+
+    //유틸리티 함수
+    async function fetchUserIdByNickname(nickname) {
+        const response = await fetch(`/api/users/search?nickname=${encodeURIComponent(nickname)}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if(!response.ok) throw new Error(`사용자 "${nickname}"를 찾을 수 없습니다.`);
+
+        const users = await response.json();
+
+        const user = users[0];
+        console.log(user);
+        return user.userId;
+    }
+
+    async function fetchUserIdsByNicknames(nicknames) {
+        const userIds = [];
+        for (const nickname of nicknames) {
+            try{
+                userIds.push(await fetchUserIdByNickname(nickname));
+            } catch(e) {
+                console.error(`${nickname} 조회 실패:`,e);
+            }
+        }
+        return userIds;
+    }
+
+    function convertToBackendRoomType(frontendType){
+        const typeMap = {
+            'public': null,
+            'group': '그룹',
+            'one-on-one':'1대1'
+        };
+        return typeMap[frontendType];
+    }
+
+    function convertToFrontendRoomType(backendType){
+        const typeMap = {
+            '그룹': 'group',
+            '1대1': 'one-on-one'
+        };
+        return typeMap[backendType] || 'public';
+    }
+
+    //메세지 관련
     function subscribeToRoom(roomId) {
-        if (stompClient && stompClient.connected) {
-            stompClient.subscribe('/topic/chat/room/' + roomId, onMessageReceived);
-            console.log(`Room ${roomId} 구독 시작.`);
+        if(roomSubscription) {
+            console.log('🔄 이전 방 구독 해제:', roomSubscription.id);
+            try {
+                roomSubscription.unsubscribe();
+            } catch (e) {
+                console.warn('구독 해제 실패:', e);
+            }
+            roomSubscription = null;
+        }
+
+        if(stompClient && stompClient.connected) {
+            try {
+                roomSubscription = stompClient.subscribe(
+                    `/topic/chatroom/${roomId}`,
+                    onMessageReceived,
+                    { id: `room-${roomId}` }
+                );
+                console.log(`✅ Room ${roomId} 구독 시작.`)
+            } catch (e){
+                console.error('방 구독 실패:', e);
+            }
+        } else{
+            console.warn('⚠️ STOMP 연결이 없어 방 구독 실패');
         }
     }
 
     function onMessageReceived(payload) {
-        const message = JSON.parse(payload.body);
-        displayMessage(message);
-    }
+        try {
+            const message = JSON.parse(payload.body);
+            console.log("수신된 메세지:", message);
 
-    // ⭐⭐ 보강: 메시지 전송 로직 (전송 후 화면 표시) ⭐⭐
-    function sendMessage() {
-        const messageContent = inputArea.value.trim();
-        if (messageContent && stompClient && stompClient.connected && currentRoomId) {
-            const chatMessage = {
-                roomId: currentRoomId,
-                sender: myUsername,
-                content: messageContent,
-                timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-            };
 
-            // 1. 서버로 전송 (실시간 웹소켓)
-            stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
-
-            // 2. 입력 필드 초기화
-            inputArea.value = '';
-
-            // 3. 화면에 즉시 표시 (UX 개선)
-            displayMessage(chatMessage);
-
-            // 4. 목록의 마지막 메시지 업데이트
-            updateLastMessage(currentRoomId, messageContent);
-
-        } else if (!currentRoomId) {
-            alert("채팅방을 먼저 선택해주세요.");
-        } else if (!stompClient || !stompClient.connected) {
-            alert("❌ 채팅 서버에 연결되어 있지 않습니다. 잠시 후 재시도 해주세요.");
+            displayMessage({
+                sender : message.senderId,
+                senderNickname : message.senderNickname,
+                content : message.content,
+                timestamp : formatTimestamp(message.sentAt || new Date())
+            });
+        } catch (e) {
+            console.log('메세지 파싱 오류:',e);
         }
     }
-    // ⭐⭐ 보강 끝 ⭐⭐
+    function formatTimestamp(sentAt) {
+        return new Date(sentAt).toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    // 메시지 전송 로직 (전송 후 화면 표시)
+    function sendMessage() {
+        const messageContent = inputArea.value.trim();
+
+        if(!messageContent) return;
+
+        if(!currentRoomId){
+            alert("채팅방을 먼저 선택해주세요.");
+            return;
+        }
+
+        if(!stompClient || !stompClient.connected){
+            alert("❌ 채팅 서버에 연결되어 있지 않습니다. 잠시 후 재시도 해주세요.");
+            return;
+        }
+
+        const chatMessage = {
+            roomId: currentRoomId,
+            sender: currentUserId,
+            senderNickname: currentNickname,
+            content: messageContent,
+        };
+
+        console.log("chatMessage :", chatMessage);
+
+        // 1. 서버로 전송 (실시간 웹소켓)
+        stompClient.send(`/app/chatroom/${currentRoomId}/send`, {}, JSON.stringify(chatMessage));
+
+        // 2. 입력 필드 초기화
+        inputArea.value = '';
+
+        // 4. 목록의 마지막 메시지 업데이트
+        updateLastMessage(currentRoomId, messageContent);
+
+    }
 
 
-    // ★새로운 함수: 채팅 목록의 마지막 메시지 업데이트
+    // 새로운 함수: 채팅 목록의 마지막 메시지 업데이트
     function updateLastMessage(roomId, content) {
         const roomItem = document.querySelector(`.room-item[data-room-id="${roomId}"]`);
         if (roomItem) {
@@ -1026,146 +1296,272 @@
     }
 
     function displayMessage(message) {
-        const isMine = message.sender === myUsername;
+        const isMine = message.sender === myUserId;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'message-wrapper ' + (isMine ? 'mine' : 'other');
+
+        if (!isMine) {
+            const nicknameDiv = document.createElement('div');
+            nicknameDiv.className = 'message-nickname';
+            nicknameDiv.textContent = message.senderNickname;
+            wrapper.appendChild(nicknameDiv);
+        }
+
+        const bubbleRow = document.createElement('div');
+        bubbleRow.className = 'bubble-row ' + (isMine ? 'mine' : 'other');
+
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'message-meta';
+        timeDiv.textContent = message.timestamp;
+
         const bubble = document.createElement('div');
         bubble.className = 'message-bubble ' + (isMine ? 'mine' : 'other');
+        bubble.innerHTML = message.content;
 
-        let senderName = isMine ? '' : message.sender;
-        if (message.sender.includes("(운영진)") || message.sender.includes("관리자")) {
-            senderName = `<span style="font-weight: 700; color: #6c5ce7;">${senderName}</span>`;
-        } else if (message.sender.includes("(방장)")) {
-            senderName = `<span style="font-weight: 700; color: #e74c3c;">${senderName}</span>`;
-        }
+        // 시간
+        const time = document.createElement('div');
+        time.className = 'message-time';
+        time.textContent = message.timestamp;
 
-        const meta = `<div class="message-meta">${message.timestamp}</div>`;
-        const content = `<div class="message-content message-text">${senderName}${!isMine && senderName ? ': ' : ''}${message.content}</div>`;
-
+        // 카톡처럼 말풍선 오른쪽에 시간 붙이기
         if (isMine) {
-            bubble.innerHTML = meta + content;
+            bubbleRow.appendChild(time);
+            bubbleRow.appendChild(bubble);
         } else {
-            bubble.innerHTML = content + meta;
+            bubbleRow.appendChild(bubble);
+            bubbleRow.appendChild(time);
         }
 
-        chatContainer.appendChild(bubble);
+        wrapper.appendChild(bubbleRow);
+
+        chatContainer.appendChild(wrapper);
         chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        // const isMine = message.sender === myUserId;
+        // const bubble = document.createElement('div');
+        // bubble.className = 'message-bubble ' + (isMine ? 'mine' : 'other');
+        //
+        // if(!isMine) {
+        //     const nicknameDiv = document.createElement('div');
+        //     nicknameDiv.className = 'message-nickname';
+        //     nicknameDiv.textContent = message.senderNickname;
+        //     bubble.appendChild(nicknameDiv);
+        // }
+        //
+        //
+        //
+        //
+        // const meta = `<div class="message-meta">${message.timestamp}</div>`;
+        // const content = `<div class="message-content message-text">${message.senderNickname}${!isMine && message.senderNickname ? ': ' : ''}${message.content}</div>`;
+        //
+        // if (isMine) {
+        //     bubble.innerHTML = meta + content;
+        // } else {
+        //     bubble.innerHTML = content + meta;
+        // }
+        //
+        // chatContainer.appendChild(bubble);
+        // chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    // ⭐⭐ 보강: loadRoomList 함수 (안 읽은 메시지 뱃지 추가) ⭐⭐
-    function loadRoomList(type) {
+    // 채팅방 목록 관리
+    async function loadRoomList(type) {
         currentChatType = type;
-        const rooms = MOCK_ROOMS[type] || [];
+        roomListContainer.innerHTML = '<div style="padding:20px; text-align:center; color:#999;">로딩 중...</div>';
+
+        try {
+            let rooms = [];
+            const token = localStorage.getItem('accessToken');
+
+            if (type === 'public') {
+                const [oneToOneResponse, groupResponse] = await Promise.all([
+                    fetch('/chatroom?type=1대1', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }),
+                    fetch('/chatroom?type=그룹',{
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    })
+                ]);
+
+                if(!oneToOneResponse.ok || !groupResponse.ok){
+                    throw new Error('채팅방 목록 조회 실패');
+                }
+
+                const oneToOneRooms = await oneToOneResponse.json();
+                const groupRooms = await groupResponse.json();
+                rooms = [...oneToOneRooms, ...groupRooms];
+            } else {
+                const backendType = convertToBackendRoomType(type);
+                const response = await fetch(`/chatroom?type=${backendType}`,{
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if(!response.ok) throw new Error('채팅방 목록 조회 실패');
+                rooms = await response.json();
+            }
+
+            renderRoomList(rooms);
+        } catch (error) {
+            console.error('채팅방 목록 로드 실패:', error);
+            roomListContainer.innerHTML = '<div style="padding:20px; text-align:center; color:#e74c3c;">채팅방을 불러오지 못했습니다.</div>';
+        }
+    }
+
+    // 렌더링 로직 분리
+    function renderRoomList(rooms) {
         roomListContainer.innerHTML = '';
 
         if (rooms.length === 0) {
-            roomListContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #999;">현재 ${type} 유형의 채팅방이 없습니다.</div>`;
-            if (!rooms.find(room => room.id === currentRoomId)) {
+            roomListContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: #999;">현재 ${currentChatType} 유형의 채팅방이 없습니다.</div>`;
+            if (!currentRoomId || !rooms.find(room => room.roomId === currentRoomId)) {
                 currentRoomId = null;
                 document.getElementById('current-chat-room').style.display = 'none';
                 document.getElementById('chat-welcome-message').style.display = 'flex';
-                // 채팅방 상태 표시 초기화
                 roomStatusDisplay.style.display = 'none';
             }
             return;
         }
 
-        rooms.forEach((room, index) => {
-            const isActive = room.id === currentRoomId;
+        rooms.forEach(room => {
+            const isActive = room.roomId === currentRoomId;
             const item = document.createElement('div');
             item.className = 'room-item' + (isActive ? ' active' : '');
-            item.dataset.roomId = room.id;
+            item.dataset.roomId = room.roomId;
 
-            // ★채팅방 정보 영역
+            let typeIcon = '';
+            if (room.roomType === '1대1') {
+                typeIcon = '<i class="fas fa-user" style="color:#6c5ce7; margin-right:5px;"></i>';
+            } else if (room.roomType === '그룹') {
+                typeIcon = '<i class="fas fa-users" style="color:#00b894; margin-right:5px;"></i>';
+            }
+
+            // ====== 방 구조 시작 ======
             const roomInfo = document.createElement('div');
             roomInfo.className = 'room-info';
-            roomInfo.innerHTML = `
-                       <div class="room-name">${room.name}</div>
-                       <div style="font-size: 11px; color: #aaa; margin-top: 2px;">
-                           개설일: ${room.createdAt}
-                       </div>
-                       <div class="last-message">${room.lastMessage}</div>
-                   `;
-            // roomInfo 클릭 시 room 객체 전체 전달
-            roomInfo.onclick = () => selectRoom(room);
 
-            // ★삭제 버튼
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'delete-room-btn';
-            deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
-            deleteBtn.onclick = (e) => {
-                e.stopPropagation(); // 목록 선택 이벤트 방지
-                if (confirm(`정말로 [${room.name}] 채팅방을 삭제하시겠습니까?`)) {
-                    deleteChatRoom(room.id);
-                }
-            };
+            // 제목과 뱃지 한 줄
+            const titleRow = document.createElement('div');
+            titleRow.style.display = 'flex';
+            titleRow.style.justifyContent = 'space-between';
+            titleRow.style.alignItems = 'center';
 
-            // ⭐⭐ 보강: 뱃지와 삭제 버튼 컨테이너 ⭐⭐
-            const actionContainer = document.createElement('div');
-            actionContainer.className = 'room-item-actions';
+            const roomNameDiv = document.createElement('div');
+            roomNameDiv.className = 'room-name';
+            roomNameDiv.innerHTML = `${typeIcon}<span>${room.roomName}</span>`;
 
-            // 안 읽은 메시지 뱃지 추가
-            if (room.unreadCount > 0) {
-                actionContainer.innerHTML += `<span class="unread-badge">${room.unreadCount}</span>`;
+            // 뱃지(안읽은 메시지 개수)
+            let badge = null;
+            if (room.unreadCount && room.unreadCount > 0) {
+                badge = document.createElement('span');
+                badge.className = 'unread-badge';
+                badge.textContent = room.unreadCount;
             }
-            actionContainer.appendChild(deleteBtn);
-            // ⭐⭐ 보강 끝 ⭐⭐
 
+            titleRow.appendChild(roomNameDiv);
+            if (badge) titleRow.appendChild(badge);
+
+            // 참여자 수 (아래 줄)
+            const partDiv = document.createElement('div');
+            partDiv.className = 'room-participants';
+            partDiv.style.color = '#aaa';
+            partDiv.style.fontSize = '11px';
+            partDiv.style.marginTop = '2px';
+            partDiv.textContent = `참여자: ${room.memberCount}명`;
+
+            // 조립
+            roomInfo.appendChild(titleRow);
+            roomInfo.appendChild(partDiv);
+
+            roomInfo.addEventListener('click', () => selectRoom(room));
 
             item.appendChild(roomInfo);
-            item.appendChild(actionContainer);
             roomListContainer.appendChild(item);
-
-
-            if (index === 0 && !currentRoomId) {
-                // selectRoom(room); // 페이지 로드 시 자동 선택 방지 (유지)
-            }
         });
 
-        // ⭐⭐ 보강: 채팅방 자동 선택 로직 제거 후, 초기 화면 메시지 표시 (유지) ⭐⭐
         if (!currentRoomId) {
             document.getElementById('current-chat-room').style.display = 'none';
             document.getElementById('chat-welcome-message').style.display = 'flex';
         }
     }
 
+
     // ★새로운 함수: 채팅방 삭제 로직
-    function deleteChatRoom(roomIdToDelete) {
-        let roomDeleted = false;
-        Object.keys(MOCK_ROOMS).forEach(type => {
-            const initialLength = MOCK_ROOMS[type].length;
-            MOCK_ROOMS[type] = MOCK_ROOMS[type].filter(room => room.id !== roomIdToDelete);
-            if (MOCK_ROOMS[type].length < initialLength) {
-                roomDeleted = true;
-            }
-        });
+    async function leaveChatRoom(roomId) {
+        if(!confirm('정말로 이 채팅방을 나가시겠습니까?')){
+            return;
+        }
 
-        if (roomDeleted) {
-            delete MOCK_HISTORY[roomIdToDelete];
-            alert('채팅방이 삭제되었습니다.');
+        try {
+            const response = await fetch(`/chatroom/${roomId}/leave`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-            if (currentRoomId === roomIdToDelete) {
+            if(!response.ok) throw new Error('채팅방 나가기 실패')
+
+            alert('채팅방을 나갔습니다.');
+
+            if(currentRoomId === roomId){
                 currentRoomId = null;
+                document.getElementById('current-chat-room').style.display = 'none';
+                document.getElementById('chat-welcome-message').style.display = 'flex';
+
+                const leaveRoomBtn = document.getElementById('leave-room-btn');
+                if(leaveRoomBtn){
+                    leaveRoomBtn.style.display = 'none';
+                }
             }
             loadRoomList(currentChatType);
+        } catch (e){
+            console.error('채팅방 나가기 실패:', e);
+            alert('채팅방을 나가는데 실패했습니다.');
         }
     }
 
-
-    function loadRoomHistory(roomId) {
-        const id = parseInt(roomId);
-        const history = MOCK_HISTORY[id] || [];
-
-        chatContainer.innerHTML = '';
-
-        if (history.length === 0) {
-            // ⭐⭐ 보강: 채팅 내용이 없을 때 메시지 표시 ⭐⭐
-            chatContainer.innerHTML = `<div style="text-align: center; color: #999; margin-top: 50px;">새로운 채팅을 시작하세요.</div>`;
+    async function loadRoomHistory(roomId) {
+        if(chatContainer.children.length > 0){
+            chatContainer.innerHTML = '';
         } else {
-            history.forEach(msg => displayMessage(msg));
+            chatContainer.innerHTML = '<div style="text-align:center; padding:30px; color:#999;">메시지를 불러오는 중...</div>';
+        }
+
+        try {
+            const response = await fetch(`/chatroom/${roomId}/messages`,{
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if(!response.ok) throw new Error('메세지 조회 실패');
+
+            const messages = await response.json();
+            chatContainer.innerHTML = '';
+
+            messages.forEach(msg => {
+                displayMessage({
+                    sender : msg.senderId,
+                    senderNickname : msg.senderNickname,
+                    content : msg.content,
+                    timestamp: formatTimestamp(msg.sentAt)
+                });
+            });
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        } catch (e) {
+            console.error('메세지 로드 실패:',e);
+            chatContainer.innerHTML = '<div style="text-align:center; color:#e74c3c; padding:30px;">메시지를 불러오지 못했습니다.</div>';
         }
     }
 
     // ⭐⭐ 보강: selectRoom 함수 (채팅방 상태 표시 업데이트) ⭐⭐
-    function selectRoom(room) {
+    async function selectRoom(room) {
         const activeItem = document.querySelector('.room-item.active');
         if (activeItem) {
             activeItem.classList.remove('active');
@@ -1177,7 +1573,7 @@
         // ⭐⭐⭐ 보강: 새로운 방 선택 시 인라인 프로필 창 닫기 ⭐⭐⭐
         openInlineProfileDetail(false);
 
-        const newActiveItem = document.querySelector(`.room-item[data-room-id="${room.id}"]`);
+        const newActiveItem = document.querySelector(`.room-item[data-room-id="${room.roomId}"]`);
         if (newActiveItem) {
             newActiveItem.classList.add('active');
             // 선택된 방의 뱃지 제거 (읽음 처리)
@@ -1186,44 +1582,45 @@
             room.unreadCount = 0;
         }
 
-        currentRoomId = room.id;
-        document.getElementById('sidebar-room-name').textContent = room.name;
-        roomTitleElement.textContent = room.name;
+        try {
+            await fetch(`/chatroom/${room.roomId}/mark-read`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+        } catch (e) {
+            console.error('읽음 상태 갱신 실패:', e);
+        }
+
+        currentRoomId = room.roomId;
+        document.getElementById('sidebar-room-name').textContent = room.roomName;
+        roomTitleElement.textContent = room.roomName;
+
+        const leaveRoomBtn = document.getElementById('leave-room-btn');
+        if(leaveRoomBtn){
+            leaveRoomBtn.style.display = 'block';
+            leaveRoomBtn.onclick = () => leaveChatRoom(room.roomId);
+        }
 
         // 채팅방 상세 상태 업데이트 (ERD: ChatRoom 반영)
-        // ⭐⭐ 보강된 채팅방 헤더 UI 업데이트 로직 ⭐⭐
         roomStatusDisplay.style.display = 'flex';
-        roomParticipantCount.textContent = `${room.participants.length}/${room.maxParticipants}`;
+        roomParticipantCount.textContent = `${room.memberCount}명`;
 
-        let iconClass = '';
-        if (currentChatType === 'one-on-one') {
-            iconClass = 'fas fa-lock'; // 1:1 채팅은 잠금 아이콘
-        } else {
-            iconClass = 'fas fa-users'; // 그룹/전체 채팅은 사용자 아이콘
-        }
+        let iconClass = room.roomType === '1대1' ? 'fas fa-lock' : 'fas fa-users';
         roomTypeIcon.innerHTML = `<i class="${iconClass}"></i>`;
-
-        // 헤더에 상태 표시 요소를 DOM에 추가/정렬
-        const chatHeader = document.getElementById('chat-room-header');
-        if (!chatHeader.querySelector('.room-title-wrapper')) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'room-title-wrapper';
-            wrapper.appendChild(roomTitleElement);
-            wrapper.appendChild(roomStatusDisplay);
-            chatHeader.prepend(wrapper);
-        }
-        // ⭐⭐ 보강 끝 ⭐⭐
-
 
         document.getElementById('chat-welcome-message').style.display = 'none';
         document.getElementById('current-chat-room').style.display = 'flex';
         document.getElementById('current-chat-room').style.flexDirection = 'column';
 
         // ⭐⭐ 보강: 채팅 내용을 로드 ⭐⭐
-        loadRoomHistory(room.id);
+        await loadRoomHistory(room.roomId);
 
         if (stompClient && stompClient.connected) {
-            subscribeToRoom(room.id);
+            subscribeToRoom(room.roomId);
         } else {
             connect();
         }
@@ -1236,7 +1633,6 @@
             loadParticipantList(currentRoomId);
             participantSidebar.classList.add('open');
             chatMainWrapper.classList.add('sidebar-open');
-            // ⭐⭐ 보강: 사이드바 열 때 인라인 프로필 창 닫기 ⭐⭐
             openInlineProfileDetail(false);
         } else {
             participantSidebar.classList.remove('open');
@@ -1245,92 +1641,125 @@
     }
 
     // ★★★ 수정: 참여자 목록 로드 시 인라인 프로필 상세 창 연결 ★★★
-    function loadParticipantList(roomId) {
-        const roomsOfType = MOCK_ROOMS[currentChatType];
-        const room = roomsOfType ? roomsOfType.find(r => r.id === parseInt(roomId)) : null;
+    async function loadParticipantList(roomId) {
+        participantListContainer.innerHTML = '<div style="padding:20px; text-align:center; color:#999;">참여자 목록을 불러오는 중...</div>';
+        try{
+            const [roomResponse, participantsResponse] = await Promise.all([
+                fetch(`/chatroom/${roomId}`,{
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }),
+                fetch(`/chatroom/${roomId}/participants`,{
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+            ]);
 
-        participantListContainer.innerHTML = '';
+            if(!roomResponse.ok || !participantsResponse.ok) throw new Error('참여자 정보 조회 실패');
 
-        if (!room || !room.participants) {
-            participantListContainer.innerHTML = '<p style="color: #999; text-align: center;">참여자 정보를 찾을 수 없습니다.</p>';
-            return;
-        }
+            const room = await roomResponse.json();
+            const participants = await participantsResponse.json();
 
-        document.getElementById('sidebar-room-name').textContent = `${room.name} (${room.participants.length}명)`;
+            console.log(`참가자 목록 명단 ${participants.map(p => p.nickname)}`);
 
-        room.participants.forEach(participant => {
-            const item = document.createElement('div');
-            item.className = 'participant-item';
+            participantListContainer.innerHTML = '';
 
-            let iconClass = 'fas fa-user-circle';
-            let roleBadge = '';
-
-            if (participant.includes('(운영진)') || participant.includes('관리자')) {
-                iconClass = 'fas fa-shield-alt';
-                roleBadge = '<span class="participant-role-badge role-admin">운영진</span>';
-            } else if (participant.includes('(방장)')) {
-                iconClass = 'fas fa-crown';
-                roleBadge = '<span class="participant-role-badge role-host">방장</span>';
+            if(!participants || participants.length === 0){
+                participantListContainer.innerHTML = '<p style="color: #999; text-align: center; padding:20px;">참여자 정보를 찾을 수 없습니다.</p>';
+                return;
             }
-            if (participant.includes(myUsername)) {
-                if (!roleBadge) {
-                    roleBadge = '<span class="participant-role-badge role-me">나</span>';
-                } else {
-                    roleBadge += '<span class="participant-role-badge role-me">나</span>';
+
+            document.getElementById('sidebar-room-name').textContent = `${room.roomName} (${participants.length} 명)`;
+
+            participants.forEach(participant => {
+                const item = document.createElement('div');
+                item.className = 'participant-item';
+
+                let iconClass = 'fas fa-user-circle';
+                let roleBadge = '';
+                const nickname = participant.nickname;
+
+                if(participant.role === 'creator'){
+                    iconClass = 'fas fa-crown';
+                    roleBadge = '<span class="participant-role-badge role-host">방장</span>';
                 }
-            }
 
-            let displayName = participant.replace(/\s\(.*\)/g, '');
+                if(participant.userId === myUserId){
+                    roleBadge += '<span class="participant-role-badge role-me">나</span>';
+                    item.style.backgroundColor = '#f0f5ff';
+                }
 
-            // ★ 수정: 기존 openProfileModal 대신 openInlineProfileDetail 호출
-            // **클릭 이벤트에만** 연결하여 자동 호출 방지
-            item.onclick = () => openInlineProfileDetail(displayName);
+                if(participant.userId === myUserId){
+                    item.style.cursor = 'pointer';
+                    item.onclick = () => openInlineProfileDetail(participant.userId, participant.nickname);
+                } else {
+                    item.style.cursor = 'default';
+                }
 
-            item.innerHTML = `
+                item.innerHTML = `
                        <div class="participant-icon-wrapper">
                            <i class="${iconClass}"></i>
                        </div>
                        <div class="participant-details">
-                           <span class="participant-name">${displayName}${roleBadge}</span>
+                           <span class="participant-name">${participant.nickname}${roleBadge}</span>
                        </div>
                    `;
-            participantListContainer.appendChild(item);
-        });
+                participantListContainer.appendChild(item);
+            });
+        } catch (e) {
+            console.error('참여자 목록 로드 실패:', e);
+            participantListContainer.innerHTML = '<p style="color: #e74c3c; text-align: center; padding:20px;">참여자 목록을 불러오지 못했습니다.</p>';
+        }
     }
 
     // ★★★ 최종 수정: 인라인 프로필 상세 정보 함수 (매칭내용 제거) ★★★
-    function openInlineProfileDetail(username) {
+    async function openInlineProfileDetail(userId, displayName) {
+        console.log('=== openInlineProfileDetail 호출 ===');
+        console.log('userId:', userId, '타입:', typeof userId);
+        console.log('displayName:', displayName);
 
         const isCurrentlyOpen = inlineProfileDetail.classList.contains('open');
 
         // 닫기 요청이거나, 이미 열려 있는 상태에서 같은 유저를 다시 클릭하면 닫기
-        if (username === false || (isCurrentlyOpen && inlineProfileDetail.dataset.username === username)) {
+        if (userId === false || (isCurrentlyOpen && inlineProfileDetail.dataset.username === userId)) {
             // ⭐⭐ 닫기 시 display: none으로 완전히 숨김 ⭐⭐
             inlineProfileDetail.classList.remove('open');
             inlineProfileDetail.style.display = 'none'; // 즉시 숨김
-            delete inlineProfileDetail.dataset.username;
+            delete inlineProfileDetail.dataset.userId;
             return;
         }
 
-        const profile = MOCK_PROFILES[username] ||
-            { nickname: username, position: '미등록', location: '미등록', profilePic: '/images/default-profile.png' };
+        try {
+            const response = await fetch(`/api/user/${userId}`,{
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-        // DOM에 현재 유저 이름 저장
-        inlineProfileDetail.dataset.username = username;
+            if(!response.ok) throw new Error('사용자 정보 조회 실패')
 
-        document.getElementById('profile-img-detail').src = profile.profilePic || '/images/default-profile.png';
-        document.getElementById('profile-nickname-detail').textContent = profile.nickname;
-        document.getElementById('profile-location-detail').textContent = profile.location; // 장소 (지역)
-        document.getElementById('profile-position-detail').textContent = profile.position;
-        // document.getElementById('profile-match-info-detail').textContent = matchInfo; // ⭐⭐ 매칭내용 제거 ⭐⭐
+            const profile = await response.json();
 
-        // ⭐⭐ 열기 전 display: flex로 설정 ⭐⭐
-        inlineProfileDetail.style.display = 'flex';
-        inlineProfileDetail.classList.add('open');
+            inlineProfileDetail.dataset.userId = userId;
+
+            document.getElementById('profile-img-detail').src = profile.profilePic || '/images/default-profile.png';
+            document.getElementById('profile-nickname-detail').textContent = profile.nickname;
+            document.getElementById('profile-location-detail').textContent = profile.address; // 장소 (지역)
+            document.getElementById('profile-position-detail').textContent = profile.position;
+
+            inlineProfileDetail.style.display = 'flex';
+            inlineProfileDetail.classList.add('open');
+        } catch (e) {
+            console.error('프로필 조회 실패:', e);
+            alert('프로필 정보를 불러올 수 없습니다.');
+        }
     }
 
     // 새 채팅 모달 열기/닫기 (상대방 닉네임 인자 추가)
     function openNewChatModal(open, recipientUsername = null) {
+        console.log("new-modal click");
         if (open) {
             newChatModal.classList.add('open');
             newChatTitleInput.value = '';
@@ -1357,19 +1786,19 @@
 
         if (type === 'one-on-one') {
             recipientInputGroup.style.display = 'block';
-            maxParticipantsGroup.style.display = 'none'; // 1:1은 인원 설정 숨김
+            if (maxParticipantsGroup) maxParticipantsGroup.style.display = 'none'; // 1:1은 인원 설정 숨김
             chatFormInfo.textContent = '상대방 닉네임이 필수입니다.';
             newChatRecipientInput.placeholder = '1:1 채팅할 상대방의 닉네임을 입력하세요';
 
         } else if (type === 'group') {
             recipientInputGroup.style.display = 'block';
-            maxParticipantsGroup.style.display = 'block'; // 그룹은 인원 설정 표시
+            if (maxParticipantsGroup) maxParticipantsGroup.style.display = 'block'; // 그룹은 인원 설정 표시
             chatFormInfo.textContent = '그룹 채팅에 초대할 참여자 닉네임을 쉼표(,)로 입력하세요 (선택 사항).';
             newChatRecipientInput.placeholder = '초대할 닉네임 입력 (선택 사항)';
 
         } else if (type === 'public') {
             recipientInputGroup.style.display = 'none';
-            maxParticipantsGroup.style.display = 'none'; // 전체 채팅은 인원 설정 숨김
+            if (maxParticipantsGroup) maxParticipantsGroup.style.display = 'none'; // 전체 채팅은 인원 설정 숨김
             chatFormInfo.textContent = '전체 채팅방은 누구나 참여 가능합니다.';
         }
 
@@ -1378,99 +1807,82 @@
     }
 
     // ★수정된 함수: 채팅방 생성 (카테고리별)
-    function createNewChat() {
+    async function createNewChat() {
         const type = newChatTypeSelect.value;
         const title = newChatTitleInput.value.trim();
         const recipientInput = newChatRecipientInput.value.trim();
         const maxParticipantsInput = document.getElementById('new-chat-max-participants'); // 추가된 변수
+        const maxParticipants = parseInt(maxParticipantsInput.value);
+        const createBtn = document.querySelector('.btn-create');
+        createBtn.disabled = true;
 
         if (!title) {
             alert("채팅방 제목을 입력해주세요.");
             return;
         }
 
-        let newRoomName = title;
-        let newParticipants = [myUsername];
-        let maxCount = 50; // 기본값
+        try {
+            //const token = localStorage.getItem('accessToken');
+            let apiUrl = '';
+            let requestOptions = {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            };
 
-        if (type === 'one-on-one') {
-            if (!recipientInput) {
-                alert("1:1 채팅은 상대방 닉네임이 필수입니다.");
-                return;
-            }
-            const recipient = recipientInput.split(',')[0].trim(); // 첫 번째 닉네임만 사용
-            newRoomName = `1:1 채팅 - ${recipient} (vs ${myUsername})`;
-            newParticipants = [myUsername, recipient];
-
-            // 1:1 중복 확인 (더미)
-            const existingRoom = MOCK_ROOMS['one-on-one'].find(room =>
-                room.participants.includes(recipient) && room.participants.includes(myUsername)
-            );
-            if (existingRoom) {
-                alert(`${recipient}님과의 채팅방이 이미 존재합니다.`);
-                openNewChatModal(false);
-                selectRoom(existingRoom);
-                return;
-            }
-            maxCount = 2; // 1:1 고정
-
-        } else if (type === 'group') {
-            newRoomName = `[그룹] ${title}`;
-            if (recipientInput) {
-                const recipients = recipientInput.split(',').map(r => r.trim()).filter(r => r);
-                newParticipants = [myUsername + ' (방장)', ...recipients];
+            if (type === 'one-on-one') {
+                if (!recipientInput) {
+                    alert("1:1 채팅은 상대방 닉네임이 필수입니다.");
+                    createBtn.disabled = false;
+                    return;
+                }
+                const targetUserId = await fetchUserIdByNickname(recipientInput);
+                apiUrl = `/chatroom/onetoone?targetUserId=${targetUserId}`;
+                console.log(apiUrl);
             } else {
-                newParticipants = [myUsername + ' (방장)'];
+                const invitedNicknames = recipientInput ? recipientInput.split(',').map(n => n.trim()) : [];
+                let invitedUserIds = invitedNicknames.length > 0 ? await fetchUserIdsByNicknames(invitedNicknames) : [];
+
+                invitedUserIds = invitedUserIds.filter(id => id !== myUserId);
+                console.log('초대할 사용자 (본인 제외):', invitedUserIds);
+
+                apiUrl = '/chatroom/group';
+
+                requestOptions.headers['Content-Type'] = 'application/json';
+                requestOptions.body = JSON.stringify({
+                    roomType: '그룹',
+                    roomName: title,
+                    invitedUserIds: invitedUserIds,
+                    maxParticipants: maxParticipants || 10
+                });
             }
-            // ⭐⭐ 수정: 최대 인원 값 사용 ⭐⭐
-            maxCount = parseInt(maxParticipantsInput.value) || 10;
-            if (maxCount < 3) maxCount = 3;
+            const response = await fetch(apiUrl, requestOptions);
 
-        } else if (type === 'public') {
-            newRoomName = `[전체] ${title}`;
-            newParticipants = [myUsername]; // 방장만 초기 참여자로 가정
-            maxCount = 50; // Public 고정
-        }
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('응답 에러:', errorText);
+                throw new Error('채팅방 생성 실패');
+            }
 
-        // 새 방 ID 생성 및 데이터 추가
-        const newRoomId = nextChatRoomId++;
-        const newRoom = {
-            id: newRoomId,
-            name: newRoomName,
-            lastMessage: '새로운 채팅방이 시작되었습니다.',
-            participants: newParticipants,
-            maxParticipants: maxCount,
-            // ⭐⭐ 수정: 현재 날짜로 개설일 설정 ⭐⭐
-            createdAt: new Date().toISOString().slice(0, 10)
-        };
+            const newRoom = await response.json();
 
-        MOCK_ROOMS[type].unshift(newRoom); // 목록 맨 앞에 추가
-        MOCK_HISTORY[newRoomId] = [{ sender: 'System', content: newRoomName + '이(가) 생성되었습니다.', timestamp: new Date().toLocaleTimeString('ko-KR') }]; // 초기 대화 기록 생성
+            openNewChatModal(false);
 
-        // 3. 모달 닫고, 해당 탭으로 이동 후, 새 방 선택
-        openNewChatModal(false);
+            // 탭 전환
+            chatTypeTabs.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+            const newTab = document.querySelector(`[data-type="${type}"]`);
+            if (newTab) newTab.classList.add('active');
 
-        // 탭 전환
-        chatTypeTabs.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
-        const newTab = document.querySelector(`[data-type="${type}"]`);
-        if (newTab) newTab.classList.add('active');
-
-        loadRoomList(type); // 목록 갱신
-        selectRoom(newRoom); // 새 방으로 이동
-    }
-
-    // ★수정된 함수: 프로필 모달 열기/닫기 (기존 모달이 아닌 인라인 상세 정보 창을 쓰므로, 이 함수는 사용하지 않도록 처리)
-    // 인라인 상세 정보 창을 닫는 로직만 남겨둠
-    function openProfileModal(username) {
-        // 이 함수는 기존 모달을 닫는 역할만 수행하거나, 아예 사용하지 않도록 처리합니다.
-        // 대신 openInlineProfileDetail(username)을 사용합니다.
-        console.warn("openProfileModal 대신 openInlineProfileDetail을 사용하세요.");
-        if (username === false) {
-            const modal = document.getElementById('profile-modal');
-            modal.classList.remove('open');
+            loadRoomList(type); // 목록 갱신
+            setTimeout(()=>selectRoom(newRoom),500); // 새 방으로 이동
+        } catch (e) {
+            console.error('채팅방 생성 실패'+e);
+            alert('채팅방 생성에 실패했습니다:' + e.message);
+        } finally {
+            createBtn.disabled = false;
         }
     }
-
 
     // ===========================================
     // ★친구 초대 기능 로직★ (이전 코드에서 복구)
@@ -1480,33 +1892,13 @@
      * 친구 초대 모달 열기/닫기
      */
     function openInviteModal(open = true) {
-        const currentRoom = MOCK_ROOMS[currentChatType].find(r => r.id === currentRoomId);
-
-        if (currentRoomId === null || !currentRoom) {
+        if(!currentRoomId) {
             alert('채팅방을 먼저 선택해주세요.');
             return;
         }
 
-        if (open) {
-            const currentCount = currentRoom.participants.length;
-            const maxCount = currentRoom.maxParticipants;
-            const availableSlots = maxCount - currentCount;
-
-            // 1:1 채팅이거나 이미 만원인 경우 제한
-            if (currentChatType === 'one-on-one' || availableSlots <= 0) {
-                alert('이 방은 현재 초대할 수 없습니다. (1:1 채팅 또는 정원 초과)');
-                return;
-            }
-
-            // 모달 헤더 정보 업데이트
-            document.getElementById('invite-room-name').textContent = currentRoom.name;
-            document.getElementById('invite-count-info').textContent = `최대 ${maxCount}명 중 ${availableSlots}명 추가 가능`;
-
-            loadFriendListForInvite(currentRoom);
-
-            selectedInvitees.clear();
-            selectedInviteCountElement.textContent = 0;
-
+        if(open) {
+            loadFriendListForInvite();
             inviteModal.classList.add('open');
         } else {
             inviteModal.classList.remove('open');
@@ -1516,107 +1908,99 @@
     /**
      * 초대 가능한 친구 목록을 렌더링
      */
-    function loadFriendListForInvite(currentRoom) {
-        const currentParticipantsNames = currentRoom.participants.map(p => p.split(' ')[0]);
-        friendListToInvite.innerHTML = '';
+    async function loadFriendListForInvite(currentRoom) {
+        if(!currentRoomId){
+            alert('채팅방을 먼저 선택해주세요.');
+            return;
+        }
+        friendListToInvite.innerHTML = '<div style="padding:20px; text-align:center; color:#999;">로딩 중...</div>';
+        try {
+            const [ friendsResponse, participantsResponse] = await Promise.all([
+                fetch(`/api/friends`,{
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }),
+                fetch(`/chatroom/${currentRoomId}/participants`,{
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+            ]);
+            if(!friendsResponse.ok) throw new Error('친구 목록 조회 실패');
+            if (!participantsResponse.ok) throw new Error('참여자 조회 실패');
 
-        const availableSlots = currentRoom.maxParticipants - currentRoom.participants.length;
+            const friends = await friendsResponse.json();
+            const participants = await participantsResponse.json();
+            const participantUserIds = new Set(participants.map(p => p.userId));
 
-        MOCK_FRIENDS.filter(friend => friend.name !== myUsername.split(' ')[0] && !currentParticipantsNames.includes(friend.name))
-            .forEach(friend => {
+            const availableFriends = friends.filter(f => !participantUserIds.has(f.userId));
+            friendListToInvite.innerHTML = '';
+
+            if (availableFriends.length === 0) {
+                friendListToInvite.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">초대 가능한 친구가 없습니다.</p>';
+                selectedInviteCountElement.textContent = 0;
+                return;
+            }
+
+            availableFriends.forEach(friend => {
                 const item = document.createElement('div');
                 item.className = 'invite-friend-item';
-                item.dataset.friendName = friend.name;
-
-                const isAvailable = friend.status === '온라인'; // 초대 로직은 온라인만 가능하다고 가정
-
-                // 체크박스
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.className = 'friend-checkbox';
-                checkbox.disabled = !isAvailable || selectedInvitees.size >= availableSlots;
-                checkbox.checked = selectedInvitees.has(friend.name);
-
-                checkbox.onchange = function() {
-                    toggleInviteSelection(friend.name, item, this.checked);
-                };
-
-                const nameSpan = document.createElement('span');
-                nameSpan.innerHTML = `${friend.name}
-                       <span class="friend-status ${isAvailable ? '' : 'offline'}">(${friend.status})</span>`;
-
-                item.appendChild(checkbox);
-                item.appendChild(nameSpan);
-
+                item.innerHTML = `
+                <input type="checkbox" class="friend-checkbox" value="${friend.userId}">
+                <span>${friend.nickname}</span>`;
                 friendListToInvite.appendChild(item);
             });
 
-        if (friendListToInvite.innerHTML === '') {
-            friendListToInvite.innerHTML = '<p style="text-align: center; padding: 20px; color: #999;">초대할 친구가 없습니다.</p>';
+            function updateSelectedInviteCount() {
+                const checkedCount = document.querySelectorAll('.friend-checkbox:checked').length;
+                selectedInviteCountElement.textContent = checkedCount;
+            }
+            const checkboxes = friendListToInvite.querySelectorAll('.friend-checkbox');
+            checkboxes.forEach(checkbox => checkbox.addEventListener('change', updateSelectedInviteCount));
+
+            updateSelectedInviteCount();
+        } catch (e) {
+            console.error('친구 목록 로드 실패:', e);
+            friendListToInvite.innerHTML = '<p style="text-align:center; padding:20px; color:#e74c3c;">친구 목록을 불러올 수 없습니다.</p>';
+            selectedInviteCountElement.textContent = 0;
         }
     }
 
     /**
-     * 친구 선택/해제 토글 로직
+     * 최종 초대 전송
      */
-    function toggleInviteSelection(name, itemElement, isChecked) {
-        const currentRoom = MOCK_ROOMS[currentChatType].find(r => r.id === currentRoomId);
-        const availableSlots = currentRoom.maxParticipants - currentRoom.participants.length;
+    async function sendInvite() {
+        const checkboxes = document.querySelectorAll('.friend-checkbox:checked');
+        const invitedUserIds = Array.from(checkboxes).map(c => parseInt(c.value));
 
-        if (isChecked) {
-            if (selectedInvitees.size < availableSlots) {
-                selectedInvitees.add(name);
-                itemElement.classList.add('selected');
-            } else {
-                // 선택 제한 시 체크박스 상태 롤백
-                itemElement.querySelector('.friend-checkbox').checked = false;
-                alert(`최대 ${availableSlots}명까지만 초대할 수 있습니다.`);
-                return;
-            }
-        } else {
-            selectedInvitees.delete(name);
-            itemElement.classList.remove('selected');
-        }
-
-        selectedInviteCountElement.textContent = selectedInvitees.size;
-
-        // ★슬롯이 가득 찼을 때, 모든 미선택 체크박스 비활성화
-        const shouldDisable = selectedInvitees.size >= availableSlots;
-        document.querySelectorAll('.invite-friend-item').forEach(item => {
-            const checkbox = item.querySelector('.friend-checkbox');
-            if (!checkbox.checked && shouldDisable) {
-                checkbox.disabled = true;
-            } else {
-                const friendName = item.dataset.friendName;
-                const friend = MOCK_FRIENDS.find(f => f.name === friendName);
-                if (friend && friend.status === '온라인') {
-                    checkbox.disabled = false;
-                }
-            }
-        });
-    }
-
-    /**
-     * 최종 초대 전송 (더미 로직)
-     */
-    function sendInvite() {
-        if (selectedInvitees.size === 0) {
-            alert('초대할 친구를 한 명 이상 선택해주세요.');
+        if(invitedUserIds.length === 0) {
+            alert('초대할 친구를 선택해주세요.');
             return;
         }
 
-        const inviteList = Array.from(selectedInvitees).join(', ');
-        const currentRoom = MOCK_ROOMS[currentChatType].find(r => r.id === currentRoomId);
+        try {
+            console.log("초대한 사용자 리스트",invitedUserIds);
+            const response = await fetch(`/chatroom/${currentRoomId}/invite`,{
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(invitedUserIds),
+                credentials: 'include'
+            });
 
-        // ★ 실제 로직: 서버의 /api/chat/invite 엔드포인트에 POST 요청 전송
-        console.log(`[초대 전송 시뮬레이션] 방 ID ${currentRoomId}에 ${inviteList}를 초대합니다.`);
+            if(!response.ok) throw new Error('초대 실패');
 
-        alert(`${inviteList} 님에게 초대 메시지를 보냈습니다! (실제로는 서버에서 처리)`);
-
-        // 더미 데이터에 참여자 추가 (UI 반영)
-        currentRoom.participants.push(...Array.from(selectedInvitees).map(name => name)); // 이름만 추가
-        loadParticipantList(currentRoomId); // 사이드바 갱신
-        openInviteModal(false); // 모달 닫기
+            alert('초대 메세지를 성공적으로 보냈습니다.');
+            openInviteModal(false);
+            loadParticipantList(currentRoomId);
+            loadRoomList(currentChatType);
+        } catch (e) {
+            console.error('초대 실패:', e);
+            alert('초대에 실패했습니다.');
+        }
     }
     // ===========================================
     // ★기타 이벤트 리스너 (기존 로직 유지)
@@ -1639,52 +2023,112 @@
 
     // ⭐⭐ 인라인 프로필 액션 버튼 핸들러 연결 ⭐⭐
     document.addEventListener('DOMContentLoaded', () => {
-        // ... (기존 DOMContentLoaded 로직 유지) ...
-
-        if (profileChatBtn) {
-            profileChatBtn.addEventListener('click', function() {
-                const username = inlineProfileDetail.dataset.username;
-                openInlineProfileDetail(false); // 창 닫기
-                openNewChatModal(true, username); // 새 채팅 모달 열기 및 유저 이름 전달
-            });
+        console.log('✅ DOMContentLoaded 실행됨');
+        // ✅ 인라인 프로필 초기 숨김
+        if (inlineProfileDetail) {
+            inlineProfileDetail.style.display = 'none';
         }
 
-        if (profileFriendBtn) {
-            profileFriendBtn.addEventListener('click', function() {
-                const username = inlineProfileDetail.dataset.username;
-                alert(`${username}님에게 친구 요청을 보냅니다.`); // ⭐ 요청 시뮬레이션 알림 표시 ⭐
-                openInlineProfileDetail(false); // ⭐ 창 닫기 ⭐
-                // window.location.href = '/friends'; // ⭐ 페이지 이동 로직 제거 ⭐
-            });
-        }
-
-        // ⭐⭐⭐ 비회원 접근 제어 로직 (채팅은 회원만 가능) ⭐⭐⭐
+        // ✅ 비회원 접근 제어
         const accessToken = localStorage.getItem('accessToken');
         if (!accessToken) {
-            alert("❌ 실시간 채팅은 회원만 이용할 수 없습니다.");
+            alert("❌ 실시간 채팅은 회원만 이용할 수 있습니다.");
             window.location.href = '/login';
             return;
         }
 
-        // HTML 탭 순서와 JS 초기화를 맞춥니다.
-        const defaultType = 'public'; // HTML에서 public이 첫 번째이므로 기본값으로 설정
-        let activeTab = document.querySelector(`[data-type="public"]`);
+        initUserInfo();
 
-        // 현재 active 클래스가 없는 경우 defaultTab을 활성화합니다.
-        if (!document.querySelector('.chat-type-tabs button.active')) {
-            if (activeTab) activeTab.classList.add('active');
-            currentChatType = defaultType;
-        } else {
-            currentChatType = document.querySelector('.chat-type-tabs button.active').dataset.type;
+        if(chatTypeTabs){
+            chatTypeTabs.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if(button){
+                    chatTypeTabs.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                }
+                const newType = button.dataset.type;
+                loadRoomList(newType);
+            });
         }
 
-        loadRoomList(currentChatType);
-        // 초기 로드 후 UX 개선을 위해 1:1 채팅 폼 초기화
-        updateNewChatForm('one-on-one');
+        const profileChatBtn = document.getElementById('profile-chat-btn');
+        const profileFriendBtn = document.getElementById('profile-friend-btn');
 
-        // ⭐⭐ 초기 로드 시 인라인 프로필 창 숨김 ⭐⭐
-        openInlineProfileDetail(false);
+        if(profileChatBtn){
+            profileChatBtn.addEventListener('click', async function(){
+                const targetUserId = inlineProfileDetail.dataset.userId;
+                if(!targetUserId){
+                    alert('사용자 정보를 불러올 수 없습니다.');
+                    return;
+                }
+                try {
+                    const response = await fetch(`/chatroom/onetoone?targetUserId=${targetUserId}`,{
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    if(!response.ok) throw new Error('1:1 채팅방 생성 실패');
+
+                    const chatRoom = await response.json();
+                    openInlineProfileDetail(false);
+
+                    chatTypeTabs.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                    const oneToOneTab = document.querySelector(`[data-type="one-on-one"]`);
+                    if(oneToOneTab) oneToOneTab.classList.add('active');
+
+                    await loadRoomList('one-on-one');
+                    setTimeout(() => selectRoom(chatRoom), 300);
+                } catch (e) {
+                    console.error('1:1 채팅 시작 실패:', e);
+                    alert('1:1 채팅을 시작할 수 없습니다.');
+                }
+            });
+        }
+        if (profileFriendBtn) {
+            profileFriendBtn.addEventListener('click', async function() {
+                const targetUserId = inlineProfileDetail.dataset.userId;
+                if (!targetUserId) {
+                    alert('사용자 정보를 불러올 수 없습니다.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/friends/request/${targetUserId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ targetUserId: targetUserId })
+                    });
+
+                    if (!response.ok) throw new Error('친구요청 실패');
+
+                    alert('친구 요청을 보냈습니다.');
+                    openInlineProfileDetail(false);
+                } catch (e) {
+                    console.error('친구 요청 실패:', e);
+                    alert('친구 요청을 보낼 수 없습니다.');
+                }
+            });
+        }
     });
+    const messageInput = document.getElementById('message-input');
+    if (messageInput) {
+        messageInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+    }
+
+    window.addEventListener('beforeunload', () => {
+        console.log('🔄 페이지 언로드, WebSocket 정리');
+        disconnect();
+    })
 </script>
 </body>
 </html>

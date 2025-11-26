@@ -1,9 +1,9 @@
 package com.multi.backend5_1_multi_fc.user.service;
 
-
 import com.multi.backend5_1_multi_fc.user.dto.UserDto;
 import com.multi.backend5_1_multi_fc.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,14 +15,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService implements UserDetailsService {
-
 
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
@@ -40,9 +41,24 @@ public class UserService implements UserDetailsService {
         }
         return new User(userDto.getUsername(), userDto.getPassword(), Collections.emptyList());
     }
+    public List<UserDto> searchUsersByNickname(String nickname) {
+        return userMapper.findUsersByNickname(nickname);
+    }
+    public UserDto findUserById(Long userId) {
+        return userMapper.findByUserId(userId);
+    }
+    public UserDto getUserByUsername(String username) {
+        UserDto user = userMapper.findUserByUsername(username);
+
+        if (user == null) {
+            log.error("❌ 사용자를 찾을 수 없음: {}", username);
+            throw new RuntimeException("User not found: " + username);
+        }
+        return user;
+    }
 
     @Transactional
-    public void signup(UserDto userDto, MultipartFile profileImage) throws IOException {
+    public void signup(UserDto userDto, MultipartFile profileImageFile) throws IOException {
         if (userMapper.countByUsername(userDto.getUsername()) > 0) {
             throw new IllegalStateException("이미 존재하는 아이디입니다.");
         }
@@ -53,10 +69,27 @@ public class UserService implements UserDetailsService {
             throw new IllegalStateException("이미 존재하는 닉네임입니다.");
         }
 
-        // 2. S3에 파일 업로드
-        String imageUrl = s3Service.uploadFile(profileImage);
+        String imageUrl = null;
 
-        userDto.setProfileImage(imageUrl); // DTO의 profile_image 필드에 S3 URL 저장
+        if (profileImageFile != null && !profileImageFile.isEmpty()) {
+            imageUrl = s3Service.uploadFile(profileImageFile);
+        }
+
+        else if (userDto.getProfileImage() != null && !userDto.getProfileImage().isEmpty()) {
+            imageUrl = userDto.getProfileImage();
+        }
+
+        else {
+            if ("남성".equals(userDto.getGender())) {
+                imageUrl = "https://multifc-profile-images.s3.ap-northeast-2.amazonaws.com/profile/tiger_profile_square.png";
+            } else {
+                imageUrl = "https://multifc-profile-images.s3.ap-northeast-2.amazonaws.com/profile/rabbit_profile_square.png";
+            }
+        }
+
+        // 최종 결정된 URL 저장
+        userDto.setProfileImage(imageUrl);
+
 
         // 3. 비밀번호 암호화
         userDto.setPassword(passwordEncoder.encode(userDto.getPassword()));
@@ -101,6 +134,15 @@ public class UserService implements UserDetailsService {
         }
         return username.substring(0, 3) + "*".repeat(username.length() - 3);
     }
+    // [추가] 아이디로 회원 정보 전체 조회 (API용)
+    public UserDto getUserProfile(String username) {
+        UserDto userDto = userMapper.findUserByUsername(username);
+
+        if (userDto != null) {
+            String nick = userDto.getNickname();
+        }
+        return userDto;
+    }
 
     // 인증코드 요청
     @Transactional
@@ -122,7 +164,6 @@ public class UserService implements UserDetailsService {
 
         try {
             javaMailSender.send(message);
-            System.out.println("✅ 이메일 발송 성공!");
         } catch (Exception e) {
             System.err.println("❌ 이메일 발송 실패: " + e.getMessage());
             e.printStackTrace();

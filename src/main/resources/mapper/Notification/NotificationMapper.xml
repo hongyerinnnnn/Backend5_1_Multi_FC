@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.multi.backend5_1_multi_fc.notification.dao.NotificationDao">
+
+    <resultMap id="NotificationResultMap" type="com.multi.backend5_1_multi_fc.notification.dto.NotificationDto">
+        <id column="notification_id" property="notificationId"/>
+        <result column="user_id" property="userId"/>
+        <result column="type" property="type"/>
+        <result column="reference_id" property="referenceId"/>
+        <result column="content" property="content"/>
+        <result column="is_read" property="isRead"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.multi.backend5_1_multi_fc.notification.dto.NotificationDto"
+            useGeneratedKeys="true" keyProperty="notificationId">
+        INSERT INTO Notification (
+            user_id, content, type, is_read, created_at, reference_id
+        ) values (
+                     #{userId}, #{content}, #{type}, #{isRead}, NOW(), #{referenceId}
+                 )
+    </insert>
+
+    <select id="findByUserId" parameterType="long" resultType="com.multi.backend5_1_multi_fc.notification.dto.NotificationDto">
+        select *
+        from Notification
+        where user_id = #{userId}
+        order by created_at desc
+    </select>
+
+    <select id="findUnreadByUserId" parameterType="long" resultType="com.multi.backend5_1_multi_fc.notification.dto.NotificationDto">
+        select *
+        from Notification
+        where user_id = #{userId} and is_read = false
+        order by created_at desc
+    </select>
+
+    <select id="countUnreadByUserId" parameterType="long" resultType="int">
+        select count(*)
+        from Notification
+        where user_id = #{userId} and is_read = false
+    </select>
+
+    <update id="updateReadStatus" parameterType="long">
+        update Notification
+        set is_read = true
+        where notification_id = #{notificationId}
+    </update>
+
+    <update id="updateAllReadByUserId" parameterType="long">
+        update Notification
+        set is_read = true
+        where user_id = #{userId} and is_read = false
+    </update>
+
+    <delete id="delete" parameterType="long">
+        delete from Notification
+        where notification_id = #{notificationId}
+    </delete>
+
+    <select id="findUnreadCommentNotification"
+            parameterType="map"
+            resultType="com.multi.backend5_1_multi_fc.notification.dto.NotificationDto">
+        SELECT *
+        FROM Notification
+        WHERE user_id = #{userId}
+          AND type = '댓글'
+          AND reference_id = #{postId}
+          AND is_read = false
+            LIMIT 1
+    </select>
+
+    <update id="updateContent" parameterType="map">
+        UPDATE Notification
+        SET content = #{content}
+        WHERE notification_id = #{notificationId}
+    </update>
+</mapper>
