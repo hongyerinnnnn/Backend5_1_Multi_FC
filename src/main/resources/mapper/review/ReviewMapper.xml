@@ -44,6 +44,7 @@
             SELECT 1
             FROM Match_Room mr
             WHERE mr.stadium_id = #{stadiumId}
+              AND mr.status = 'CLOSED'
               AND mr.status NOT IN ('CANCELED')
               AND STR_TO_DATE(CONCAT(mr.match_date, ' ', mr.end_time), '%Y-%m-%d %H:%i') &lt; NOW()
               AND (
@@ -68,7 +69,8 @@
         SELECT DISTINCT mr.stadium_id
         FROM Match_Room mr
         WHERE
-            mr.status NOT IN ('CANCELED')
+            mr.status = 'CLOSED'
+          AND mr.status NOT IN ('CANCELED')
           AND
             STR_TO_DATE(CONCAT(mr.match_date, ' ', mr.end_time), '%Y-%m-%d %H:%i') &lt; NOW()
           AND (
